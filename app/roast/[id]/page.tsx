@@ -17,11 +17,9 @@ export default function RoastDisplayPage() {
   const roastId = params.id as string;
 
   const roastData = useQuery(
-    api.publicRoasts.getRoastWithIdea,
+    api.roasts.getRoastWithIdea,
     roastId ? { roastId: roastId as any } : "skip"
   );
-
-  const makePublic = useMutation(api.publicRoasts.makePublic);
 
   if (roastData === undefined) {
     return (
@@ -47,30 +45,34 @@ export default function RoastDisplayPage() {
 
   const { roast, idea } = roastData;
 
-  const handleMakePublic = async () => {
-    try {
-      await makePublic({ roastId: roastId as any });
-      alert("Roast made public! It will appear in the directory.");
-    } catch (error) {
-      console.error("Error making public:", error);
-      alert("Failed to make public. Please try again.");
+  if (!idea) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Idea not found</p>
+          <Button onClick={() => router.push("/")}>Back to Home</Button>
+        </div>
+      </div>
+    );
     }
-  };
+
 
   return (
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
-        <div className="mb-8">
-          <Button variant="ghost" onClick={() => router.push("/")} className="mb-4">
-            ← Back to Home
-          </Button>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="outline">{idea.category}</Badge>
-            <Badge variant="outline">{idea.stage}</Badge>
-            <Badge variant="outline">{roast.brutality}</Badge>
+        <header className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <Button variant="ghost" onClick={() => router.push("/")}>
+              ← Back to Home
+            </Button>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="glass">{idea.category}</Badge>
+              <Badge variant="outline" className="glass">{idea.stage}</Badge>
+              <Badge variant="outline" className="glass capitalize">{roast.brutality}</Badge>
+            </div>
           </div>
-        </div>
+        </header>
 
         {/* Verdict */}
         <Card className="mb-8 glass-strong glow-blue">
@@ -83,9 +85,9 @@ export default function RoastDisplayPage() {
         </Card>
 
         {/* Idea Summary */}
-        <Card className="mb-8">
+        <Card className="mb-8 glass">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold">Idea Summary</CardTitle>
+            <CardTitle className="text-xl font-semibold gradient-text">Idea Summary</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">{idea.pitch}</p>
@@ -133,9 +135,6 @@ export default function RoastDisplayPage() {
 
         {/* Actions */}
         <div className="flex gap-4 flex-wrap">
-          <Button onClick={handleMakePublic} variant="outline">
-            Make Public
-          </Button>
           <Button
             onClick={() => {
               if (navigator.share) {

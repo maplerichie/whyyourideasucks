@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -20,20 +19,20 @@ type FormData = {
   category: "B2B/SaaS" | "B2C app" | "Marketplace" | "Dev tool" | "Consumer hardware" | "Other";
   stage: "Pre-idea" | "Hackathon demo" | "MVP built" | "Traction" | "Raising";
   brutality: "gentle" | "honest" | "savage";
-  
+
   // Stage 2
   targetUser: string;
   tam: number;
   problemUrgency: number;
   alternatives: string;
   evidence?: string;
-  
+
   // Stage 3
   distribution: string;
   distributionChannels: string[];
   cacGuess?: number;
   unfairEdge: string;
-  
+
   // Stage 4
   monetization: string;
   monetizationModel: "Freemium" | "Subscription" | "Ads" | "One-time" | "Other";
@@ -46,74 +45,79 @@ const DISTRIBUTION_CHANNELS = ["SEO", "Paid Ads", "Viral/Social", "Partnerships"
 
 export function IdeaForm() {
   const router = useRouter();
-  const [stage, setStage] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const submitIdea = useMutation(api.ideas.submitIdea);
   const generateRoast = useAction(api.roast.generateRoast);
   const saveRoast = useMutation(api.roasts.saveRoast);
 
-  // Check for quick roast data from landing page
-  const getInitialData = (): FormData => {
+  // Default values from test script
+  const defaultFormData: FormData = {
+    pitch: "whyyourideasucks.ai - A platform that uses AI to brutally evaluate startup ideas, providing honest feedback on market viability, distribution, monetization, and defensibility. Perfect for hackathon judges and founders who want quick, unfiltered feedback.",
+    category: "B2B/SaaS",
+    stage: "MVP built",
+    brutality: "savage",
+    targetUser: "Startup founders, hackathon judges, investors",
+    tam: 50000000,
+    problemUrgency: 8,
+    alternatives: "Manual idea evaluation, YC application process, expensive consultants",
+    evidence: "Founders waste time on bad ideas. Hackathon judges need quick evaluations.",
+    distribution: "Product Hunt launch, Twitter/X virality, YC community, hackathon partnerships",
+    distributionChannels: ["Product Hunt", "Twitter/X", "YC Community", "Hackathons"],
+    cacGuess: 15,
+    unfairEdge: "First-mover in brutal AI feedback space, terminal hacker aesthetic, YC-style grilling",
+    monetization: "Freemium model with premium detailed reports and API access",
+    monetizationModel: "Freemium",
+    price: 29,
+    teamFit: "Technical founder with AI/ML background, experience in startup evaluation",
+    tractionMetrics: "Early beta users, positive feedback from hackathon judges",
+  };
+
+  // Initialize form data - use lazy initializer to ensure defaults are always applied
+  const [formData, setFormData] = useState<FormData>(() => {
+    // Always start with defaults
+    let initialData = { ...defaultFormData };
+
+    // Check for quick roast data from landing page (only on client)
     if (typeof window !== "undefined") {
       const quickPitch = sessionStorage.getItem("quickPitch");
       const quickCategory = sessionStorage.getItem("quickCategory");
       const quickStage = sessionStorage.getItem("quickStage");
       const quickBrutality = sessionStorage.getItem("quickBrutality");
-      
+
       if (quickPitch) {
         // Clear session storage after reading
         sessionStorage.removeItem("quickPitch");
         sessionStorage.removeItem("quickCategory");
         sessionStorage.removeItem("quickStage");
         sessionStorage.removeItem("quickBrutality");
-        
-        return {
+
+        // Override with quick roast data, but keep defaults for missing fields
+        initialData = {
+          ...defaultFormData,
           pitch: quickPitch,
-          category: (quickCategory as FormData["category"]) || "B2B/SaaS",
-          stage: (quickStage as FormData["stage"]) || "Pre-idea",
-          brutality: (quickBrutality as FormData["brutality"]) || "honest",
-          targetUser: "",
-          tam: 1000000,
-          problemUrgency: 5,
-          alternatives: "",
-          evidence: "",
-          distribution: "",
-          distributionChannels: [],
-          cacGuess: undefined,
-          unfairEdge: "",
-          monetization: "",
-          monetizationModel: "Subscription",
-          price: undefined,
-          teamFit: "",
-          tractionMetrics: "",
+          category: (quickCategory as FormData["category"]) || defaultFormData.category,
+          stage: (quickStage as FormData["stage"]) || defaultFormData.stage,
+          brutality: (quickBrutality as FormData["brutality"]) || defaultFormData.brutality,
         };
       }
     }
-    
-    return {
-      pitch: "",
-      category: "B2B/SaaS",
-      stage: "Pre-idea",
-      brutality: "honest",
-      targetUser: "",
-      tam: 1000000,
-      problemUrgency: 5,
-      alternatives: "",
-      evidence: "",
-      distribution: "",
-      distributionChannels: [],
-      cacGuess: undefined,
-      unfairEdge: "",
-      monetization: "",
-      monetizationModel: "Subscription",
-      price: undefined,
-      teamFit: "",
-      tractionMetrics: "",
-    };
+
+    return initialData;
+  });
+
+  // Check for quick roast data to determine initial stage
+  const getInitialStage = (): number => {
+    if (typeof window !== "undefined") {
+      const quickPitch = sessionStorage.getItem("quickPitch");
+      if (quickPitch) {
+        return 2; // Start at stage 2 if coming from quick roast
+      }
+    }
+    return 1; // Start at stage 1 for new form
   };
 
-  const [formData, setFormData] = useState<FormData>(getInitialData());
+  const [stage, setStage] = useState(getInitialStage());
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -202,46 +206,55 @@ export function IdeaForm() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="mb-10">
-        <h1 className="text-4xl md:text-5xl font-bold mb-3 gradient-text">Get Your Idea Roasted</h1>
-        <p className="text-lg text-muted-foreground">
-          Answer a few questions to get a brutal-but-constructive evaluation
-        </p>
-      </div>
+    <div className="min-h-screen">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className="text-4xl md:text-5xl font-bold mb-3 gradient-text">Get Your Idea Roasted</h1>
+          <p className="text-lg text-muted-foreground">
+            Answer a few questions to get a brutal-but-constructive evaluation
+          </p>
+        </div>
 
-      {/* Progress Indicator */}
-      <div className="mb-8 flex gap-2">
-        {[1, 2, 3, 4].map((s) => (
-          <div
-            key={s}
-            className={`flex-1 h-2 rounded ${
-              s <= stage ? "bg-primary" : "bg-muted"
-            }`}
-          />
-        ))}
-      </div>
+        {/* Progress Indicator */}
+        <div className="mb-8">
+          <div className="flex gap-2 mb-2">
+            {[1, 2, 3, 4].map((s) => (
+              <div
+                key={s}
+                className={`flex-1 h-2 rounded-full transition-all duration-300 ${
+                  s <= stage 
+                    ? "bg-gradient-to-r from-primary to-secondary shadow-lg shadow-primary/20" 
+                    : "bg-muted"
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Step {stage} of 4
+          </p>
+        </div>
 
-      <Card className="terminal-border">
+      <Card className="glass-strong">
         <CardHeader>
           <CardTitle>
             Stage {stage}:{" "}
             {stage === 1
               ? "Idea Basics"
               : stage === 2
-              ? "Market & Users"
-              : stage === 3
-              ? "Go-to-Market"
-              : "Money & Fit"}
+                ? "Market & Users"
+                : stage === 3
+                  ? "Go-to-Market"
+                  : "Money & Fit"}
           </CardTitle>
           <CardDescription>
             {stage === 1
               ? "Tell us about your idea"
               : stage === 2
-              ? "Who needs this and why?"
-              : stage === 3
-              ? "How will you reach users?"
-              : "How will you make money?"}
+                ? "Who needs this and why?"
+                : stage === 3
+                  ? "How will you reach users?"
+                  : "How will you make money?"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -264,46 +277,39 @@ export function IdeaForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    updateField("category", value as FormData["category"])
-                  }
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="B2B/SaaS">B2B/SaaS</SelectItem>
-                    <SelectItem value="B2C app">B2C app</SelectItem>
-                    <SelectItem value="Marketplace">Marketplace</SelectItem>
-                    <SelectItem value="Dev tool">Dev tool</SelectItem>
-                    <SelectItem value="Consumer hardware">Consumer hardware</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Category</Label>
+                <div className="flex flex-wrap gap-2">
+                  {["B2B/SaaS", "B2C app", "Marketplace", "Dev tool", "Consumer hardware", "Other"].map((cat) => (
+                    <Button
+                      key={cat}
+                      type="button"
+                      variant={formData.category === cat ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateField("category", cat as FormData["category"])}
+                      className={formData.category === cat ? "" : "hover:bg-muted"}
+                    >
+                      {cat}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="stage">Stage</Label>
-                <Select
-                  value={formData.stage}
-                  onValueChange={(value) =>
-                    updateField("stage", value as FormData["stage"])
-                  }
-                >
-                  <SelectTrigger id="stage">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pre-idea">Pre-idea</SelectItem>
-                    <SelectItem value="Hackathon demo">Hackathon demo</SelectItem>
-                    <SelectItem value="MVP built">MVP built</SelectItem>
-                    <SelectItem value="Traction">Traction</SelectItem>
-                    <SelectItem value="Raising">Raising</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Stage</Label>
+                <div className="flex flex-wrap gap-2">
+                  {["Pre-idea", "Hackathon demo", "MVP built", "Traction", "Raising"].map((s) => (
+                    <Button
+                      key={s}
+                      type="button"
+                      variant={formData.stage === s ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateField("stage", s as FormData["stage"])}
+                      className={formData.stage === s ? "" : "hover:bg-muted"}
+                    >
+                      {s}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
               <BrutalityMeter
@@ -451,24 +457,21 @@ export function IdeaForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="monetizationModel">Monetization Model</Label>
-                <Select
-                  value={formData.monetizationModel}
-                  onValueChange={(value) =>
-                    updateField("monetizationModel", value as FormData["monetizationModel"])
-                  }
-                >
-                  <SelectTrigger id="monetizationModel">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Freemium">Freemium</SelectItem>
-                    <SelectItem value="Subscription">Subscription</SelectItem>
-                    <SelectItem value="Ads">Ads</SelectItem>
-                    <SelectItem value="One-time">One-time</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Monetization Model</Label>
+                <div className="flex flex-wrap gap-2">
+                  {["Freemium", "Subscription", "Ads", "One-time", "Other"].map((model) => (
+                    <Button
+                      key={model}
+                      type="button"
+                      variant={formData.monetizationModel === model ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateField("monetizationModel", model as FormData["monetizationModel"])}
+                      className={formData.monetizationModel === model ? "" : "hover:bg-muted"}
+                    >
+                      {model}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -537,6 +540,7 @@ export function IdeaForm() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

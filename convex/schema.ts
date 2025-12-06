@@ -92,20 +92,7 @@ export default defineSchema({
     pivots: v.array(v.string()),
     next7days: v.array(v.string()),
     createdAt: v.number(),
-  }),
-
-  publicRoasts: defineTable({
-    roastId: v.id("roasts"),
-    ideaId: v.id("ideas"),
-    // Denormalized fields for directory display
-    pitch: v.string(),
-    category: v.string(),
-    verdict: v.string(),
-    avgScore: v.number(), // Average of all dimension scores
-    createdAt: v.number(),
   })
-    .index("by_category", ["category"])
-    .index("by_score", ["avgScore"])
     .index("by_date", ["createdAt"]),
 });
 

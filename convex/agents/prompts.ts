@@ -24,13 +24,15 @@ Evaluate this startup idea's market:
 
 ${toolContext}${marketContext}
 
-Output ONLY valid JSON matching this schema:
+CRITICAL: You MUST output ONLY valid JSON. No markdown, no code blocks, no explanations, no text before or after. Just the raw JSON object.
+
+Output ONLY valid JSON matching this exact schema:
 {
   "score": 1-10,
   "why_sucks": "One brutal sentence exposing the market weakness"
 }
 
-Be cynical. Flag: tiny markets, non-urgent problems, good-enough alternatives, unreachable TAM.`;
+Remember: Output ONLY the JSON object, nothing else. Be cynical. Flag: tiny markets, non-urgent problems, good-enough alternatives, unreachable TAM.`;
 }
 
 export function getDistributionHaterPrompt(ideaData: IdeaData, toolData?: { channels?: string[] }): string {
@@ -59,13 +61,15 @@ Attack:
 
 ${channelContext}
 
-Output ONLY valid JSON matching this schema:
+CRITICAL: You MUST output ONLY valid JSON. No markdown, no code blocks, no explanations, no text before or after. Just the raw JSON object.
+
+Output ONLY valid JSON matching this exact schema:
 {
   "score": 1-10,
   "why_sucks": "One brutal sentence attacking the distribution weakness"
 }
 
-Be a hater. Demand specifics. Roast vagueness.`;
+Remember: Output ONLY the JSON object, nothing else. Be a hater. Demand specifics. Roast vagueness.`;
 }
 
 export function getMonetizationSkepticPrompt(ideaData: IdeaData, toolData?: { pricingBenchmark?: string }): string {
@@ -97,13 +101,15 @@ Flag:
 
 ${pricingContext}
 
-Output ONLY valid JSON matching this schema:
+CRITICAL: You MUST output ONLY valid JSON. No markdown, no code blocks, no explanations, no text before or after. Just the raw JSON object.
+
+Output ONLY valid JSON matching this exact schema:
 {
   "score": 1-10,
   "why_sucks": "One brutal sentence flagging the monetization issue"
 }
 
-Be skeptical. Demand clarity. Flag red flags.`;
+Remember: Output ONLY the JSON object, nothing else. Be skeptical. Demand clarity. Flag red flags.`;
 }
 
 export function getDefensibilityCopPrompt(ideaData: IdeaData): string {
@@ -132,13 +138,15 @@ Flag if:
 - No real moat exists
 - "We're passionate" is the only edge
 
-Output ONLY valid JSON matching this schema:
+CRITICAL: You MUST output ONLY valid JSON. No markdown, no code blocks, no explanations, no text before or after. Just the raw JSON object.
+
+Output ONLY valid JSON matching this exact schema:
 {
   "score": 1-10,
   "why_sucks": "One brutal sentence exposing the defensibility weakness"
 }
 
-Be a cop. Hunt moats. Flag weaknesses.`;
+Remember: Output ONLY the JSON object, nothing else. Be a cop. Hunt moats. Flag weaknesses.`;
 }
 
 export function getHackathonRealityCheckPrompt(ideaData: IdeaData): string {
@@ -168,13 +176,15 @@ Flag if:
 - Too complex for hackathon
 - Doesn't showcase value clearly
 
-Output ONLY valid JSON matching this schema:
+CRITICAL: You MUST output ONLY valid JSON. No markdown, no code blocks, no explanations, no text before or after. Just the raw JSON object.
+
+Output ONLY valid JSON matching this exact schema:
 {
   "score": 1-10,
   "why_sucks": "One brutal sentence about demo-ability issues"
 }
 
-Be realistic. Assess scope. Flag overreach.`;
+Remember: Output ONLY the JSON object, nothing else. Be realistic. Assess scope. Flag overreach.`;
 }
 
 export function getMentorPrompt(ideaData: IdeaData, toolData?: { competitors?: string[]; pricingBenchmark?: string }): string {
@@ -198,14 +208,16 @@ Generate:
 2. Next 7 days action plan (tiny experiments to validate riskiest assumptions)
 3. General suggestions (constructive improvements)
 
-Output ONLY valid JSON matching this schema:
+CRITICAL: You MUST output ONLY valid JSON. No markdown, no code blocks, no explanations, no text before or after. Just the raw JSON object.
+
+Output ONLY valid JSON matching this exact schema:
 {
   "pivots": ["Pivot 1: ...", "Pivot 2: ...", "Pivot 3: ..."],
   "next7days": ["Day 1: ...", "Day 2: ...", ...],
   "suggestions": ["Suggestion 1", "Suggestion 2", ...]
 }
 
-Be constructive. Provide actionable fixes. Focus on concrete next steps.`;
+Remember: Output ONLY the JSON object, nothing else. No markdown formatting, no code blocks, no explanations.`;
 }
 
 export function getSynthesisPrompt(
@@ -220,7 +232,15 @@ export function getSynthesisPrompt(
   },
   mentorOutput: MentorOutput
 ): string {
+  const brutalityTone = {
+    gentle: "Be direct but respectful in your verdict and fixes. Match the tone of the critiques while staying constructive.",
+    honest: "Be brutally honest in your verdict and fixes. Match the sharp clarity of the critiques.",
+    savage: "Go full savage mode in your verdict and fixes. Match the merciless roasting tone while staying constructive.",
+  }[ideaData.brutality];
+
   return `You are a synthesis agent. Review all critiques and generate actionable fixes per dimension.
+
+${brutalityTone}
 
 Idea: "${ideaData.pitch}"
 
@@ -238,10 +258,12 @@ Mentor Suggestions:
 - Suggestions: ${mentorOutput.suggestions.join("; ")}
 
 Generate:
-1. Overall verdict (one-sentence constructive judgment)
-2. Fixes per dimension (2-3 actionable fixes for each dimension)
+1. Overall verdict (one-sentence judgment matching the brutality level)
+2. Fixes per dimension (2-3 actionable fixes for each dimension, matching the brutality tone)
 
-Output ONLY valid JSON matching this schema:
+CRITICAL: You MUST output ONLY valid JSON. No markdown, no code blocks, no explanations, no text before or after. Just the raw JSON object.
+
+Output ONLY valid JSON matching this exact schema:
 {
   "verdict": "One-sentence overall judgment",
   "fixes": {
@@ -254,6 +276,6 @@ Output ONLY valid JSON matching this schema:
   }
 }
 
-Be holistic. Synthesize all critiques. Provide actionable fixes.`;
+Remember: Output ONLY the JSON object, nothing else. No markdown formatting, no code blocks, no explanations. Be holistic. Synthesize all critiques. Match the brutality tone in your verdict and fixes.`;
 }
 

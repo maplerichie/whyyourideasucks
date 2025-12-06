@@ -12,7 +12,7 @@ export function Next7DaysCard({ actions, className }: Next7DaysCardProps) {
   if (actions.length === 0) return null;
 
   return (
-    <Card className={cn(className)}>
+    <Card className={cn("glass", className)}>
       <CardHeader>
         <CardTitle className="text-xl font-semibold gradient-text">Next 7 Days Action Plan</CardTitle>
         <CardDescription className="text-muted-foreground">

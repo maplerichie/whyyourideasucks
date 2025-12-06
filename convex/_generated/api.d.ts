@@ -21,7 +21,6 @@ import type * as agents_prompts from "../agents/prompts.js";
 import type * as agents_types from "../agents/types.js";
 import type * as ideas from "../ideas.js";
 import type * as prompts from "../prompts.js";
-import type * as publicRoasts from "../publicRoasts.js";
 import type * as roast from "../roast.js";
 import type * as roasts from "../roasts.js";
 import type * as tools_competitorLookup from "../tools/competitorLookup.js";
@@ -48,7 +47,6 @@ declare const fullApi: ApiFromModules<{
   "agents/types": typeof agents_types;
   ideas: typeof ideas;
   prompts: typeof prompts;
-  publicRoasts: typeof publicRoasts;
   roast: typeof roast;
   roasts: typeof roasts;
   "tools/competitorLookup": typeof tools_competitorLookup;

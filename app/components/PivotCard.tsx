@@ -14,7 +14,7 @@ export function PivotCard({ pivots, className, onRoastPivot }: PivotCardProps) {
   if (pivots.length === 0) return null;
 
   return (
-    <Card className={cn(className)}>
+    <Card className={cn("glass", className)}>
       <CardHeader>
         <CardTitle className="text-xl font-semibold gradient-text">Suggested Pivots</CardTitle>
         <CardDescription className="text-muted-foreground">

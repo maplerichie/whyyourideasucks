@@ -31,13 +31,15 @@ Assess:
 - Or just "we're passionate"?
 - Can they execute on this idea?
 
-Output ONLY valid JSON matching this schema:
+CRITICAL: You MUST output ONLY valid JSON. No markdown, no code blocks, no explanations, no text before or after. Just the raw JSON object.
+
+Output ONLY valid JSON matching this exact schema:
 {
   "score": 1-10,
   "why_sucks": "One brutal sentence about founder fit issues"
 }
 
-Be critical. Demand unfair advantage. Flag passion-only teams.`;
+Remember: Output ONLY the JSON object, nothing else. Be critical. Demand unfair advantage. Flag passion-only teams.`;
 
     const response = await callLLM(prompt, "openai", {
       temperature: ideaData.brutality === "savage" ? 0.7 : ideaData.brutality === "honest" ? 0.4 : 0.2,

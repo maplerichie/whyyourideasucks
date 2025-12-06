@@ -10,6 +10,5 @@ Focus on:
 - A deterministic, prompt-templated backend that outputs consistent sections and scores, plus one thin “realism” layer pulling a few live competitors/market hints.
 - Extra “wow” modes:  
   - “Roast my pivot” button that instantly re-evaluates an iterated idea.  
-  - “Judge mode” where hackathon judges paste team ideas and get structured critique to help ranking.
 
 If you want, the next step can be designing the exact question set and prompt schema so you can ship an MVP in a weekend.

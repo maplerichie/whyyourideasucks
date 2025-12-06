@@ -59,6 +59,9 @@ export function RoastPivotDialog({ originalIdea, pivotText }: RoastPivotDialogPr
       const ideaId = await submitIdea({
         ...originalIdea,
         pitch,
+        category: originalIdea.category as "B2B/SaaS" | "B2C app" | "Marketplace" | "Dev tool" | "Consumer hardware" | "Other",
+        stage: originalIdea.stage as "Pre-idea" | "Hackathon demo" | "MVP built" | "Traction" | "Raising",
+        monetizationModel: originalIdea.monetizationModel as "Freemium" | "Subscription" | "Ads" | "One-time" | "Other",
       });
 
       // Generate roast for the pivot

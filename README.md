@@ -12,7 +12,6 @@
 - **Idea Directory**: Browse public roasts, filterable by category/score with search
 - **Pivot Generator**: 2-3 sharper versions of your idea with "Roast my Pivot" functionality
 - **7-Day Action Plan**: Tiny experiments to validate your riskiest assumptions
-- **Judge Mode**: Hackathon judges paste multiple ideas for instant batch ranking
 - **Investor Due Diligence**: Fast-track deal screening with structured risk analysis—identify red flags and viability gaps in minutes
 - **Share & Export**: Share roast reports or export to PDF
 - **Terminal Hacker Theme**: Monospace typography, green-on-black aesthetic, terminal-style UI elements 
@@ -42,7 +41,7 @@ Each agent uses native LLM tool calling (OpenAI Agents SDK for GPT, Anthropic SD
    - Terminal-styled hero: "Most ideas die in silence. Let yours die quickly."
    - Quick Roast Form: Submit idea pitch, category, stage, and brutality level directly from homepage
    - Feature cards highlighting key capabilities including Investor Due Diligence
-   - Navigation to Directory and Judge Mode
+   - Navigation to Directory
 
 2. **Detailed Form** (if not using Quick Roast):
    - Multi-step form (4 stages) collecting:
@@ -113,8 +112,6 @@ A typical output would have:
 │   │   └── [id]/page.tsx            # Roast report display
 │   ├── directory/
 │   │   └── page.tsx                 # Public idea gallery
-│   ├── judge/
-│   │   └── page.tsx                 # Batch roasting for hackathon judges
 │   └── components/
 │       ├── IdeaForm.tsx             # Multi-step form component
 │       ├── QuickRoastForm.tsx       # Quick submission form
@@ -129,7 +126,6 @@ A typical output would have:
 │   ├── roast.ts                     # Main roast orchestration
 │   ├── ideas.ts                     # Idea mutations/queries
 │   ├── roasts.ts                    # Roast mutations/queries
-│   ├── publicRoasts.ts             # Public directory queries
 │   ├── agents/
 │   │   ├── base.ts                  # Shared LLM calling logic
 │   │   ├── types.ts                 # TypeScript types

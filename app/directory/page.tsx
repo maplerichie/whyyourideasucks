@@ -27,7 +27,7 @@ export default function DirectoryPage() {
   const [maxScore, setMaxScore] = useState<number | undefined>(undefined);
 
   const publicRoasts = useQuery(
-    api.publicRoasts.getPublicRoasts,
+    api.roasts.getAllRoasts,
     selectedCategory !== "All"
       ? {
           category: selectedCategory,
@@ -43,7 +43,7 @@ export default function DirectoryPage() {
   );
 
   const searchResults = useQuery(
-    api.publicRoasts.searchPublicRoasts,
+    api.roasts.searchRoasts,
     searchTerm ? { searchTerm, limit: 100 } : "skip"
   );
 
@@ -55,12 +55,19 @@ export default function DirectoryPage() {
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold mb-3 gradient-text">Idea Directory</h1>
-          <p className="text-lg text-muted-foreground">
-            Browse public roasts and learn from other ideas
-          </p>
-        </div>
+        <header className="mb-10">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold mb-3 gradient-text">Idea Directory</h1>
+              <p className="text-lg text-muted-foreground">
+                Browse all roasts and learn from other ideas
+              </p>
+            </div>
+            <Link href="/">
+              <Button variant="ghost">← Home</Button>
+            </Link>
+          </div>
+        </header>
 
         {/* Filters */}
         <div className="mb-8 space-y-4">
@@ -114,7 +121,7 @@ export default function DirectoryPage() {
             <p className="text-muted-foreground">
               {searchTerm
                 ? "No results found. Try a different search term."
-                : "No public roasts yet. Be the first to share your idea!"}
+                : "No roasts yet. Be the first to share your idea!"}
             </p>
             <Link href="/roast">
               <Button className="mt-4">Get Your Idea Roasted</Button>
@@ -127,7 +134,7 @@ export default function DirectoryPage() {
                 key={publicRoast._id}
                 href={`/roast/${publicRoast.roastId}`}
               >
-                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
+                <Card className="glass h-full hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1">
                   <CardHeader>
                     <div className="flex items-start justify-between mb-2">
                       <Badge variant="outline">{publicRoast.category}</Badge>
@@ -154,12 +161,6 @@ export default function DirectoryPage() {
           </div>
         )}
 
-        {/* Back to Home */}
-        <div className="mt-8 text-center">
-          <Link href="/">
-            <Button variant="outline">Back to Home</Button>
-          </Link>
-        </div>
       </div>
     </div>
   );

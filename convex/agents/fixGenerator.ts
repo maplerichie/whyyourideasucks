@@ -24,9 +24,9 @@ export const generateFixes = action({
 
     const prompt = getSynthesisPrompt(ideaData, roasterOutputs, mentorOutput);
 
-    // Use Anthropic for more thoughtful synthesis
+    // Use Anthropic for more thoughtful synthesis, adjust temperature based on brutality
     const response = await callLLM(prompt, "anthropic", {
-      temperature: 0.3,
+      temperature: ideaData.brutality === "savage" ? 0.7 : ideaData.brutality === "honest" ? 0.4 : 0.2,
       responseFormat: "json",
     });
 

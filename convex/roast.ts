@@ -1,14 +1,7 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 import type { IdeaData, FinalRoastOutput } from "./agents/types";
-import { evaluateMarket } from "./agents/marketCynic";
-import { evaluateDistribution } from "./agents/distributionHater";
-import { evaluateMonetization } from "./agents/monetizationSkeptic";
-import { evaluateDefensibility } from "./agents/defensibilityCop";
-import { evaluateHackathon } from "./agents/hackathonRealityCheck";
-import { evaluateFounderFit } from "./agents/founderFit";
-import { generateMentorSuggestions } from "./agents/mentor";
-import { generateFixes } from "./agents/fixGenerator";
 
 export const generateRoast = action({
   args: {
@@ -45,19 +38,19 @@ export const generateRoast = action({
       hackathonResult,
       founderFitResult,
     ] = await Promise.all([
-      evaluateMarket(ctx, { ideaData }),
-      evaluateDistribution(ctx, { ideaData }),
-      evaluateMonetization(ctx, { ideaData }),
-      evaluateDefensibility(ctx, { ideaData }),
-      evaluateHackathon(ctx, { ideaData }),
-      evaluateFounderFit(ctx, { ideaData }),
+      ctx.runAction(api.agents.marketCynic.evaluateMarket, { ideaData }),
+      ctx.runAction(api.agents.distributionHater.evaluateDistribution, { ideaData }),
+      ctx.runAction(api.agents.monetizationSkeptic.evaluateMonetization, { ideaData }),
+      ctx.runAction(api.agents.defensibilityCop.evaluateDefensibility, { ideaData }),
+      ctx.runAction(api.agents.hackathonRealityCheck.evaluateHackathon, { ideaData }),
+      ctx.runAction(api.agents.founderFit.evaluateFounderFit, { ideaData }),
     ]);
 
     // Phase 2: Run mentor agent
-    const mentorResult = await generateMentorSuggestions(ctx, { ideaData });
+    const mentorResult = await ctx.runAction(api.agents.mentor.generateMentorSuggestions, { ideaData });
 
     // Phase 3: Run synthesis agent
-    const synthesisResult = await generateFixes(ctx, {
+    const synthesisResult = await ctx.runAction(api.agents.fixGenerator.generateFixes, {
       ideaData,
       roasterOutputs: {
         market: marketResult,
