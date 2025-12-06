@@ -53,28 +53,6 @@ export function IdeaForm() {
   const generateRoast = useAction(api.roast.generateRoast);
   const saveRoast = useMutation(api.roasts.saveRoast);
 
-  // Default values from test script
-  const defaultFormData: FormData = {
-    pitch: "LocalEats - A social marketplace connecting home cooks with neighbors who want authentic, home-cooked meals. Think Uber Eats but for homemade food from your local community. Users can browse nearby home chefs, order meals for pickup or delivery, and build a community around local food culture.",
-    category: "Marketplace",
-    stage: "Pre-idea",
-    brutality: "honest",
-    targetUser: "Busy professionals aged 25-45 in urban areas, food enthusiasts who want authentic home cooking but don't have time to cook themselves",
-    tam: 2000000000,
-    problemUrgency: 6,
-    alternatives: "Uber Eats, DoorDash, meal prep services, cooking at home, restaurant dining",
-    evidence: "People love home-cooked food but lack time. Social media shows demand for authentic experiences.",
-    distribution: "Start in 3 neighborhoods, word-of-mouth, local Facebook groups, Nextdoor app, foodie Instagram influencers",
-    distributionChannels: ["Viral/Social", "Partnerships", "Content"],
-    cacGuess: 25,
-    unfairEdge: "First-mover in hyperlocal home cooking space, community-driven model creates network effects, personal connection with chefs",
-    monetization: "Take 15% commission from each transaction, optional premium subscription for chefs ($9.99/month) for better visibility",
-    monetizationModel: "Other",
-    price: 0,
-    teamFit: "Former product manager at food delivery startup, passionate home cook, some experience with marketplace models",
-    tractionMetrics: "None yet - just an idea",
-  };
-
   // Check for quick roast data first (before removing from sessionStorage)
   const getQuickRoastData = () => {
     if (typeof window !== "undefined") {
@@ -181,39 +159,37 @@ export function IdeaForm() {
   // Initialize form data - use lazy initializer to ensure defaults are always applied
   const [formData, setFormData] = useState<FormData>(() => {
     // Always start with defaults
-    let initialData = { ...defaultFormData };
+    let initialData: any = {};
 
     // Override with pivot data if available (full pre-fill)
     if (pivotData.hasPivot) {
       initialData = {
-        ...defaultFormData,
         pitch: pivotData.pitch!,
-        category: (pivotData.category as FormData["category"]) || defaultFormData.category,
-        stage: (pivotData.stage as FormData["stage"]) || defaultFormData.stage,
-        brutality: (pivotData.brutality as FormData["brutality"]) || defaultFormData.brutality,
-        targetUser: pivotData.targetUser || defaultFormData.targetUser,
-        tam: pivotData.tam || defaultFormData.tam,
-        problemUrgency: pivotData.problemUrgency || defaultFormData.problemUrgency,
-        alternatives: pivotData.alternatives || defaultFormData.alternatives,
-        evidence: pivotData.evidence || undefined,
-        distribution: pivotData.distribution || defaultFormData.distribution,
-        distributionChannels: pivotData.distributionChannels || defaultFormData.distributionChannels,
+        category: (pivotData.category as FormData["category"]),
+        stage: (pivotData.stage as FormData["stage"]),
+        brutality: (pivotData.brutality as FormData["brutality"]),
+        targetUser: pivotData.targetUser,
+        tam: pivotData.tam,
+        problemUrgency: pivotData.problemUrgency,
+        alternatives: pivotData.alternatives,
+        evidence: pivotData.evidence,
+        distribution: pivotData.distribution,
+        distributionChannels: pivotData.distributionChannels,
         cacGuess: pivotData.cacGuess,
-        unfairEdge: pivotData.unfairEdge || defaultFormData.unfairEdge,
-        monetization: pivotData.monetization || defaultFormData.monetization,
-        monetizationModel: (pivotData.monetizationModel as FormData["monetizationModel"]) || defaultFormData.monetizationModel,
+        unfairEdge: pivotData.unfairEdge,
+        monetization: pivotData.monetization,
+        monetizationModel: (pivotData.monetizationModel as FormData["monetizationModel"]),
         price: pivotData.price,
-        teamFit: pivotData.teamFit || defaultFormData.teamFit,
-        tractionMetrics: pivotData.tractionMetrics || undefined,
+        teamFit: pivotData.teamFit,
+        tractionMetrics: pivotData.tractionMetrics,
       };
     } else if (quickRoastData.hasQuickRoast) {
       // Override with quick roast data if available (partial pre-fill)
       initialData = {
-        ...defaultFormData,
         pitch: quickRoastData.pitch!,
-        category: (quickRoastData.category as FormData["category"]) || defaultFormData.category,
-        stage: (quickRoastData.stage as FormData["stage"]) || defaultFormData.stage,
-        brutality: (quickRoastData.brutality as FormData["brutality"]) || defaultFormData.brutality,
+        category: (quickRoastData.category as FormData["category"]),
+        stage: (quickRoastData.stage as FormData["stage"]),
+        brutality: (quickRoastData.brutality as FormData["brutality"]),
       };
     }
 
@@ -481,7 +457,7 @@ export function IdeaForm() {
                       maxLength={500}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {formData.pitch.length}/500 characters
+                      {formData.pitch?.length}/500 characters
                     </p>
                   </div>
 
