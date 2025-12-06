@@ -27,7 +27,7 @@ export function QuickRoastForm() {
     sessionStorage.setItem("quickStage", stage);
     sessionStorage.setItem("quickBrutality", brutality);
 
-    router.push("/roast");
+    router.push("/roast?step=2");
   };
 
   return (

@@ -53,39 +53,48 @@ export function IdeaForm() {
   const generateRoast = useAction(api.roast.generateRoast);
   const saveRoast = useMutation(api.roasts.saveRoast);
 
-  // Check for quick roast data first (before removing from sessionStorage)
-  const getQuickRoastData = () => {
+  // Initialize form data with defaults - will be populated from sessionStorage in useEffect
+  const [formData, setFormData] = useState<FormData>({
+    pitch: "",
+    category: "B2B/SaaS",
+    stage: "MVP built",
+    brutality: "honest",
+    targetUser: "",
+    tam: 1000000,
+    problemUrgency: 5,
+    alternatives: "",
+    distribution: "",
+    distributionChannels: [],
+    unfairEdge: "",
+    monetization: "",
+    monetizationModel: "Subscription",
+    teamFit: "",
+  });
+
+  // Start at stage 2 if URL parameter indicates quick roast, otherwise stage 1
+  const getInitialStage = () => {
     if (typeof window !== "undefined") {
-      const quickPitch = sessionStorage.getItem("quickPitch");
-      const quickCategory = sessionStorage.getItem("quickCategory");
-      const quickStage = sessionStorage.getItem("quickStage");
-      const quickBrutality = sessionStorage.getItem("quickBrutality");
-
-      if (quickPitch) {
-        // Clear session storage after reading
-        sessionStorage.removeItem("quickPitch");
-        sessionStorage.removeItem("quickCategory");
-        sessionStorage.removeItem("quickStage");
-        sessionStorage.removeItem("quickBrutality");
-
-        return {
-          hasQuickRoast: true,
-          pitch: quickPitch,
-          category: quickCategory,
-          stage: quickStage,
-          brutality: quickBrutality,
-        };
-      }
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("step") === "2") return 2;
     }
-    return { hasQuickRoast: false };
+    return 1;
   };
+  const [stage, setStage] = useState(getInitialStage());
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Check for pivot data (full form pre-fill)
-  const getPivotData = () => {
-    if (typeof window !== "undefined") {
-      const isPivot = sessionStorage.getItem("isPivot");
-      if (isPivot === "true") {
-        const pivotPitch = sessionStorage.getItem("pivotPitch");
+  // Load data from sessionStorage after component mounts (client-side only)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Check URL parameter for step=2 (quick roast indicator)
+    const params = new URLSearchParams(window.location.search);
+    const shouldStartAtStage2 = params.get("step") === "2";
+
+    // Check for pivot data first (full form pre-fill)
+    const isPivot = sessionStorage.getItem("isPivot");
+    if (isPivot === "true") {
+      const pivotPitch = sessionStorage.getItem("pivotPitch");
+      if (pivotPitch) {
         const pivotCategory = sessionStorage.getItem("pivotCategory");
         const pivotStage = sessionStorage.getItem("pivotStage");
         const pivotBrutality = sessionStorage.getItem("pivotBrutality");
@@ -104,100 +113,101 @@ export function IdeaForm() {
         const pivotTeamFit = sessionStorage.getItem("pivotTeamFit");
         const pivotTractionMetrics = sessionStorage.getItem("pivotTractionMetrics");
 
-        if (pivotPitch) {
-          // Clear all pivot data from sessionStorage after reading
-          sessionStorage.removeItem("isPivot");
-          sessionStorage.removeItem("pivotPitch");
-          sessionStorage.removeItem("pivotCategory");
-          sessionStorage.removeItem("pivotStage");
-          sessionStorage.removeItem("pivotBrutality");
-          sessionStorage.removeItem("pivotTargetUser");
-          sessionStorage.removeItem("pivotTam");
-          sessionStorage.removeItem("pivotProblemUrgency");
-          sessionStorage.removeItem("pivotAlternatives");
-          sessionStorage.removeItem("pivotEvidence");
-          sessionStorage.removeItem("pivotDistribution");
-          sessionStorage.removeItem("pivotDistributionChannels");
-          sessionStorage.removeItem("pivotCacGuess");
-          sessionStorage.removeItem("pivotUnfairEdge");
-          sessionStorage.removeItem("pivotMonetization");
-          sessionStorage.removeItem("pivotMonetizationModel");
-          sessionStorage.removeItem("pivotPrice");
-          sessionStorage.removeItem("pivotTeamFit");
-          sessionStorage.removeItem("pivotTractionMetrics");
+        // Update form data
+        setFormData({
+          pitch: pivotPitch,
+          category: (pivotCategory as FormData["category"]) || "B2B/SaaS",
+          stage: (pivotStage as FormData["stage"]) || "MVP built",
+          brutality: (pivotBrutality as FormData["brutality"]) || "honest",
+          targetUser: pivotTargetUser || "",
+          tam: pivotTam ? Number(pivotTam) : 0,
+          problemUrgency: pivotProblemUrgency ? Number(pivotProblemUrgency) : 5,
+          alternatives: pivotAlternatives || "",
+          evidence: pivotEvidence || undefined,
+          distribution: pivotDistribution || "",
+          distributionChannels: pivotDistributionChannels ? JSON.parse(pivotDistributionChannels) : [],
+          cacGuess: pivotCacGuess ? Number(pivotCacGuess) : undefined,
+          unfairEdge: pivotUnfairEdge || "",
+          monetization: pivotMonetization || "",
+          monetizationModel: (pivotMonetizationModel as FormData["monetizationModel"]) || "Subscription",
+          price: pivotPrice ? Number(pivotPrice) : undefined,
+          teamFit: pivotTeamFit || "",
+          tractionMetrics: pivotTractionMetrics || undefined,
+        });
 
-          return {
-            hasPivot: true,
-            pitch: pivotPitch,
-            category: pivotCategory,
-            stage: pivotStage,
-            brutality: pivotBrutality,
-            targetUser: pivotTargetUser,
-            tam: pivotTam ? Number(pivotTam) : undefined,
-            problemUrgency: pivotProblemUrgency ? Number(pivotProblemUrgency) : undefined,
-            alternatives: pivotAlternatives,
-            evidence: pivotEvidence,
-            distribution: pivotDistribution,
-            distributionChannels: pivotDistributionChannels ? JSON.parse(pivotDistributionChannels) : [],
-            cacGuess: pivotCacGuess ? Number(pivotCacGuess) : undefined,
-            unfairEdge: pivotUnfairEdge,
-            monetization: pivotMonetization,
-            monetizationModel: pivotMonetizationModel,
-            price: pivotPrice ? Number(pivotPrice) : undefined,
-            teamFit: pivotTeamFit,
-            tractionMetrics: pivotTractionMetrics,
-          };
-        }
+        // Clear all pivot data from sessionStorage after reading
+        sessionStorage.removeItem("isPivot");
+        sessionStorage.removeItem("pivotPitch");
+        sessionStorage.removeItem("pivotCategory");
+        sessionStorage.removeItem("pivotStage");
+        sessionStorage.removeItem("pivotBrutality");
+        sessionStorage.removeItem("pivotTargetUser");
+        sessionStorage.removeItem("pivotTam");
+        sessionStorage.removeItem("pivotProblemUrgency");
+        sessionStorage.removeItem("pivotAlternatives");
+        sessionStorage.removeItem("pivotEvidence");
+        sessionStorage.removeItem("pivotDistribution");
+        sessionStorage.removeItem("pivotDistributionChannels");
+        sessionStorage.removeItem("pivotCacGuess");
+        sessionStorage.removeItem("pivotUnfairEdge");
+        sessionStorage.removeItem("pivotMonetization");
+        sessionStorage.removeItem("pivotMonetizationModel");
+        sessionStorage.removeItem("pivotPrice");
+        sessionStorage.removeItem("pivotTeamFit");
+        sessionStorage.removeItem("pivotTractionMetrics");
+
+        setIsInitialized(true);
+        return;
       }
     }
-    return { hasPivot: false };
-  };
 
-  const quickRoastData = getQuickRoastData();
-  const pivotData = getPivotData();
+    // Check for quick roast data (partial pre-fill)
+    const quickPitch = sessionStorage.getItem("quickPitch");
+    if (quickPitch) {
+      const quickCategory = sessionStorage.getItem("quickCategory");
+      const quickStage = sessionStorage.getItem("quickStage");
+      const quickBrutality = sessionStorage.getItem("quickBrutality");
 
-  // Initialize form data - use lazy initializer to ensure defaults are always applied
-  const [formData, setFormData] = useState<FormData>(() => {
-    // Always start with defaults
-    let initialData: any = {};
+      // Update form data with quick roast data (partial pre-fill)
+      setFormData((prev) => ({
+        ...prev,
+        pitch: quickPitch,
+        category: (quickCategory as FormData["category"]) || "B2B/SaaS",
+        stage: (quickStage as FormData["stage"]) || "MVP built",
+        brutality: (quickBrutality as FormData["brutality"]) || "honest",
+        targetUser: prev.targetUser || "",
+        tam: prev.tam || 0,
+        problemUrgency: prev.problemUrgency || 5,
+        alternatives: prev.alternatives || "",
+        distribution: prev.distribution || "",
+        distributionChannels: prev.distributionChannels || [],
+        unfairEdge: prev.unfairEdge || "",
+        monetization: prev.monetization || "",
+        monetizationModel: prev.monetizationModel || "Subscription",
+        teamFit: prev.teamFit || "",
+      }));
 
-    // Override with pivot data if available (full pre-fill)
-    if (pivotData.hasPivot) {
-      initialData = {
-        pitch: pivotData.pitch!,
-        category: (pivotData.category as FormData["category"]),
-        stage: (pivotData.stage as FormData["stage"]),
-        brutality: (pivotData.brutality as FormData["brutality"]),
-        targetUser: pivotData.targetUser,
-        tam: pivotData.tam,
-        problemUrgency: pivotData.problemUrgency,
-        alternatives: pivotData.alternatives,
-        evidence: pivotData.evidence,
-        distribution: pivotData.distribution,
-        distributionChannels: pivotData.distributionChannels,
-        cacGuess: pivotData.cacGuess,
-        unfairEdge: pivotData.unfairEdge,
-        monetization: pivotData.monetization,
-        monetizationModel: (pivotData.monetizationModel as FormData["monetizationModel"]),
-        price: pivotData.price,
-        teamFit: pivotData.teamFit,
-        tractionMetrics: pivotData.tractionMetrics,
-      };
-    } else if (quickRoastData.hasQuickRoast) {
-      // Override with quick roast data if available (partial pre-fill)
-      initialData = {
-        pitch: quickRoastData.pitch!,
-        category: (quickRoastData.category as FormData["category"]),
-        stage: (quickRoastData.stage as FormData["stage"]),
-        brutality: (quickRoastData.brutality as FormData["brutality"]),
-      };
+      // Set stage to 2 for quick roast
+      setStage(2);
+
+      // Clear session storage after reading
+      sessionStorage.removeItem("quickPitch");
+      sessionStorage.removeItem("quickCategory");
+      sessionStorage.removeItem("quickStage");
+      sessionStorage.removeItem("quickBrutality");
+
+      setIsInitialized(true);
+      return;
     }
 
-    return initialData;
-  });
+    // If URL parameter indicates step=2 but no sessionStorage data, still start at stage 2
+    // This handles cases where sessionStorage might have been cleared or not set yet
+    if (shouldStartAtStage2) {
+      setStage(2);
+    }
 
-  // Start at stage 2 if coming from quick roast, otherwise stage 1 (improvements start at stage 1 to allow review/edits)
-  const [stage, setStage] = useState(quickRoastData.hasQuickRoast ? 2 : 1);
+    setIsInitialized(true);
+  }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) => {
