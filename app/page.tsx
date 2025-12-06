@@ -1,85 +1,74 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { QuickRoastForm } from "@/app/components/QuickRoastForm";
+import { Sparkles, Zap, Shield } from "lucide-react";
 
 export default function Home() {
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-12 md:py-20">
-        {/* Header */}
-        <header className="mb-12 md:mb-20 animate-fade-in-up">
-          <nav className="flex justify-between items-center">
-            <h1 className="text-2xl md:text-3xl font-bold gradient-text">
-              WhyYourIdeaSucks.ai
-            </h1>
-            <div className="flex gap-3">
-              <Link href="/directory">
-                <Button variant="ghost" className="text-sm md:text-base">Browse Ideas</Button>
-              </Link>
-            </div>
-          </nav>
-        </header>
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '8s' }}></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary/3 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '12s', animationDelay: '2s' }}></div>
+      </div>
 
+      <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
         {/* Hero Section */}
-        <div className="max-w-4xl mx-auto text-center mb-12 md:mb-16 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 leading-tight">
-            <span className="block mb-2">Most ideas die in</span>
-            <span className="gradient-text block">silence.</span>
-            <span className="block mt-4 text-3xl md:text-5xl lg:text-6xl">
-              Let yours die <span className="gradient-text-accent">quickly.</span>
+        <div className="max-w-3xl mx-auto text-center mb-14 md:mb-18 animate-fade-in-up">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight tracking-tight text-foreground text-balance">
+            Most ideas die in silence.
+            <br />
+            <span className="text-primary">
+              Let yours die quickly.
             </span>
-          </h2>
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 md:mb-10 max-w-2xl mx-auto">
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed text-balance">
             Get viability scores, fatal flaws, and concrete pivots in 60 seconds.
           </p>
         </div>
 
         {/* Quick Roast Form */}
-        <div className="mb-16 md:mb-20 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <div className="mb-20 md:mb-24 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           <QuickRoastForm />
         </div>
 
         {/* Selling Points */}
-        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-6 md:gap-8 mb-16 md:mb-20">
-          <Card className="glass animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-6 md:gap-8">
+          <Card className="animate-fade-in-up hover-lift border-2 border-border bg-primary/20 backdrop-blur-sm shadow-card hover:shadow-primary" style={{ animationDelay: '0.15s' }}>
             <CardContent className="pt-6">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary mb-4 flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-14 h-14 rounded-2xl bg-primary/30 mb-5 flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-lg border border-primary/20">
+                <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="font-semibold text-lg mb-2">60-second idea crash test</h3>
+              <h3 className="font-bold text-lg mb-2 text-foreground">60-second crash test</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Get a structured evaluation in about 60 seconds—viability scores, fatal flaws, and concrete pivots. Faster than traditional feedback loops.
+                Get a structured evaluation in about 60 seconds—viability scores, fatal flaws, and concrete pivots.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="glass animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <Card className="animate-fade-in-up hover-lift border-2 border-border bg-primary/20 backdrop-blur-sm shadow-card hover:shadow-primary" style={{ animationDelay: '0.2s' }}>
             <CardContent className="pt-6">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-secondary to-accent mb-4 flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <div className="w-14 h-14 rounded-2xl bg-primary/30 mb-5 flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-lg border border-primary/20">
+                <Zap className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Brutal honesty with actionable fixes</h3>
+              <h3 className="font-bold text-lg mb-2 text-foreground">Brutal honesty with fixes</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Reveals fatal flaws early (distribution, market, monetization, defensibility, founder fit) and suggests concrete pivots. YC-style grilling, automated.
+                Reveals fatal flaws early (distribution, market, monetization, defensibility) and suggests concrete pivots.
               </p>
             </CardContent>
           </Card>
 
-          <Card className="glass animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+          <Card className="animate-fade-in-up hover-lift border-2 border-border bg-primary/20 backdrop-blur-sm shadow-card hover:shadow-primary" style={{ animationDelay: '0.25s' }}>
             <CardContent className="pt-6">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent to-primary mb-4 flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
+              <div className="w-14 h-14 rounded-2xl bg-primary/30 mb-5 flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-lg border border-primary/20">
+                <Shield className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Quick due diligence</h3>
+              <h3 className="font-bold text-lg mb-2 text-foreground">Quick due diligence</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Fast-track deal screening with structured risk analysis. Identify red flags and viability gaps in minutes, not hours.
+                Fast-track deal screening with structured risk analysis. Identify red flags in minutes, not hours.
               </p>
             </CardContent>
           </Card>

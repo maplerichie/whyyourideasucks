@@ -9,6 +9,11 @@ export const generateFixes = action({
     ideaData: v.any(),
     roasterOutputs: v.any(),
     mentorOutput: v.any(),
+    agentConfig: v.object({
+      provider: v.union(v.literal("openai"), v.literal("anthropic")),
+      model: v.string(),
+      apiKey: v.string(),
+    }),
   },
   handler: async (ctx, args) => {
     const ideaData = args.ideaData as IdeaData;
@@ -21,11 +26,12 @@ export const generateFixes = action({
       hackathon: RoasterOutput;
     };
     const mentorOutput = args.mentorOutput as MentorOutput;
+    const { provider, model, apiKey } = args.agentConfig;
 
     const prompt = getSynthesisPrompt(ideaData, roasterOutputs, mentorOutput);
 
-    // Use Anthropic for more thoughtful synthesis, adjust temperature based on brutality
-    const response = await callLLM(prompt, "anthropic", {
+    // Use selected provider for synthesis, adjust temperature based on brutality
+    const response = await callLLM(prompt, provider, apiKey, model, {
       temperature: ideaData.brutality === "savage" ? 0.7 : ideaData.brutality === "honest" ? 0.4 : 0.2,
       responseFormat: "json",
     });

@@ -263,12 +263,40 @@ class RoastTester {
     }
   }
 
+  private getAgentConfig(agentName: string) {
+    // Get provider and model from environment or use defaults
+    const provider = (process.env.TEST_PROVIDER || "anthropic") as "openai" | "anthropic";
+    const model = process.env.TEST_MODEL || (provider === "openai" ? "gpt-4o" : "claude-haiku-4-5-20251001");
+    
+    // Get API key from environment
+    const apiKey = provider === "openai" 
+      ? (process.env.OPENAI_API_KEY || process.env.TEST_OPENAI_API_KEY || "")
+      : (process.env.ANTHROPIC_API_KEY || process.env.TEST_ANTHROPIC_API_KEY || "");
+    
+    if (!apiKey) {
+      throw new Error(`${provider} API key is required. Set ${provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY"} environment variable.`);
+    }
+    
+    return {
+      provider,
+      model,
+      apiKey,
+    };
+  }
+
   private async runAgent(agentName: string, action: any, args: any) {
     const startTime = Date.now();
     this.log("AGENT", agentName.toLowerCase().replace(/\s+/g, "_"), "start");
 
     try {
-      const result = await this.client.action(action, args);
+      // Add agentConfig to args if not already present
+      const agentConfig = this.getAgentConfig(agentName);
+      const argsWithConfig = {
+        ...args,
+        agentConfig,
+      };
+      
+      const result = await this.client.action(action, argsWithConfig);
       const duration = Date.now() - startTime;
 
       // Log agent output

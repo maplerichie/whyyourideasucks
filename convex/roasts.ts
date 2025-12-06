@@ -38,8 +38,9 @@ export const saveRoast = mutation({
         fix: v.array(v.string()),
       }),
     }),
-    pivots: v.array(v.string()),
-    next7days: v.array(v.string()),
+    improvements: v.array(v.string()),
+    precautions: v.array(v.string()),
+    implementationSteps: v.array(v.string()),
   },
   handler: async (ctx, args) => {
     const roastId = await ctx.db.insert("roasts", {

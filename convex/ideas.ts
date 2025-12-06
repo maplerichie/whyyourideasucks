@@ -41,6 +41,40 @@ export const submitIdea = mutation({
     tractionMetrics: v.optional(v.string()),
     brutality: v.union(v.literal("gentle"), v.literal("honest"), v.literal("savage")),
     userId: v.optional(v.id("users")),
+    modelSettings: v.optional(v.object({
+      marketCynic: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      distributionHater: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      monetizationSkeptic: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      defensibilityCop: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      founderFit: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      hackathonRealityCheck: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      mentor: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      fixGenerator: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+    })),
   },
   handler: async (ctx, args) => {
     const ideaId = await ctx.db.insert("ideas", {

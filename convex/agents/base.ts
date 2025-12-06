@@ -4,14 +4,6 @@ import type { IdeaData } from "./types";
 import { searchCompetitors, searchMarketData } from "../tools/competitorLookup";
 import { getPricingBenchmark } from "../tools/pricingBenchmark";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
 // Tool implementations for OpenAI Agents SDK
 const agentTools = {
   search_competitors: async (args: { productDescription: string; category: string }) => {
@@ -46,7 +38,9 @@ const agentTools = {
 // Create OpenAI agent with tools using official SDK
 export async function callLLMWithTools(
   prompt: string,
-  model: "openai" | "anthropic" = "openai",
+  provider: "openai" | "anthropic",
+  apiKey: string,
+  modelName: string,
   options?: {
     temperature?: number;
     responseFormat?: "json" | "text";
@@ -54,10 +48,14 @@ export async function callLLMWithTools(
     systemPrompt?: string;
   }
 ): Promise<string> {
-  if (model === "openai") {
+  if (provider === "openai") {
+    if (!apiKey) {
+      throw new Error("OpenAI API key is required");
+    }
+    const openai = new OpenAI({ apiKey });
     const systemPrompt = options?.systemPrompt || 
       (options?.responseFormat === "json"
-        ? "You are an expert startup analyst. Output ONLY valid JSON, no markdown, no explanations."
+        ? "You are an expert startup analyst. CRITICAL: You MUST output ONLY valid JSON. Never output any explanatory text, reasoning, or markdown. Start your response with { and end with }. No text before or after the JSON object."
         : "You are an expert startup analyst. Use available tools when needed.");
 
     // Convert tools to OpenAI format
@@ -116,7 +114,7 @@ export async function callLLMWithTools(
     let maxIterations = 5;
     while (maxIterations > 0) {
       const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        model: modelName,
         messages,
       temperature: options?.temperature ?? 0.3,
         tools: openaiTools,
@@ -171,6 +169,10 @@ export async function callLLMWithTools(
 
     throw new Error("Max tool call iterations reached");
   } else {
+    if (!apiKey) {
+      throw new Error("Anthropic API key is required");
+    }
+    const anthropic = new Anthropic({ apiKey });
     // Anthropic: Use native SDK with tool use (Claude Agent SDK requires different setup)
     const anthropicTools = [
       {
@@ -219,55 +221,82 @@ export async function callLLMWithTools(
 
     let maxIterations = 5;
     while (maxIterations > 0) {
-      const response = await anthropic.messages.create({
-        model: process.env.ANTHROPIC_MODEL || "claude-3-haiku-20240307",
+      // Build request options - messages array changes each iteration
+      const requestOptions: any = {
+        model: modelName,
         max_tokens: 4000,
         temperature: options?.temperature ?? 0.3,
         messages,
         tools: anthropicTools,
-      });
+      };
+      
+      // Add system message if provided (Anthropic supports this)
+      if (options?.systemPrompt) {
+        requestOptions.system = options.systemPrompt;
+      }
+      
+      const response = await anthropic.messages.create(requestOptions);
 
-      const content = response.content[0];
-      if (content.type === "text") {
-        return content.text;
+      // Check if response contains text (final answer)
+      const textContent = response.content.find((c) => c.type === "text");
+      if (textContent && textContent.type === "text") {
+        return textContent.text;
       }
 
-      // Handle tool use
-      if (content.type === "tool_use") {
-        let toolResult: any;
-        switch (content.name) {
-          case "search_competitors":
-            toolResult = await agentTools.search_competitors(content.input as any);
-            break;
-          case "get_pricing_benchmark":
-            toolResult = await agentTools.get_pricing_benchmark(content.input as any);
-            break;
-          case "search_market_data":
-            toolResult = await agentTools.search_market_data(content.input as any);
-            break;
-          default:
-            throw new Error(`Unknown tool: ${content.name}`);
-        }
-
+      // Handle tool use - Anthropic can return multiple tool_use blocks
+      const toolUseBlocks = response.content.filter((c) => c.type === "tool_use");
+      if (toolUseBlocks.length > 0) {
+        // Add assistant message with all tool_use blocks
         messages.push({
           role: "assistant",
           content: response.content,
         });
+
+        // Execute all tool calls in parallel and collect results
+        const toolResults = await Promise.all(
+          toolUseBlocks.map(async (toolUse) => {
+            if (toolUse.type !== "tool_use") return null;
+            
+            let toolResult: any;
+            switch (toolUse.name) {
+              case "search_competitors":
+                toolResult = await agentTools.search_competitors(toolUse.input as any);
+                break;
+              case "get_pricing_benchmark":
+                toolResult = await agentTools.get_pricing_benchmark(toolUse.input as any);
+                break;
+              case "search_market_data":
+                toolResult = await agentTools.search_market_data(toolUse.input as any);
+                break;
+              default:
+                throw new Error(`Unknown tool: ${toolUse.name}`);
+            }
+
+            return {
+              type: "tool_result" as const,
+              tool_use_id: toolUse.id,
+              content: JSON.stringify(toolResult),
+            };
+          })
+        );
+
+        // Filter out nulls and add all tool_results in a single user message
+        const validToolResults = toolResults.filter((r) => r !== null) as Array<{
+          type: "tool_result";
+          tool_use_id: string;
+          content: string;
+        }>;
+
         messages.push({
           role: "user",
-          content: [
-            {
-              type: "tool_result",
-              tool_use_id: content.id,
-              content: JSON.stringify(toolResult),
-            },
-          ],
+          content: validToolResults,
         });
+
         maxIterations--;
         continue;
       }
 
-      throw new Error("Unexpected response type from Anthropic");
+      throw new Error("Unexpected response type from Anthropic: no text or tool_use found");
     }
 
     throw new Error("Max tool call iterations reached");
@@ -277,19 +306,25 @@ export async function callLLMWithTools(
 // Fallback: Simple LLM call without tools (for backward compatibility)
 export async function callLLM(
   prompt: string,
-  model: "openai" | "anthropic" = "openai",
+  provider: "openai" | "anthropic",
+  apiKey: string,
+  modelName: string,
   options?: {
     temperature?: number;
     responseFormat?: "json" | "text";
   }
 ): Promise<string> {
-  if (model === "openai") {
+  if (provider === "openai") {
+    if (!apiKey) {
+      throw new Error("OpenAI API key is required");
+    }
+    const openai = new OpenAI({ apiKey });
     const systemPrompt = options?.responseFormat === "json"
       ? "You are an expert startup analyst. Output ONLY valid JSON, no markdown, no explanations."
       : "You are an expert startup analyst.";
 
     const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4",
+      model: modelName,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
@@ -299,8 +334,12 @@ export async function callLLM(
 
     return response.choices[0]?.message?.content || "";
   } else {
+    if (!apiKey) {
+      throw new Error("Anthropic API key is required");
+    }
+    const anthropic = new Anthropic({ apiKey });
     const message = await anthropic.messages.create({
-      model: process.env.ANTHROPIC_MODEL || "claude-3-haiku-20240307",
+      model: modelName,
       max_tokens: 4000,
       temperature: options?.temperature ?? 0.3,
       messages: [
@@ -319,6 +358,18 @@ export async function callLLM(
   }
 }
 
+// Helper function to fix common JSON syntax errors
+function fixJSONSyntax(jsonStr: string): string {
+  let fixed = jsonStr;
+  
+  // Remove trailing commas before } or ]
+  // Match: comma followed by whitespace and closing brace/bracket
+  // This handles: { "key": "value", } and ["item1", "item2", ]
+  fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+  
+  return fixed;
+}
+
 export function parseJSON<T>(text: string): T {
   if (!text || text.trim().length === 0) {
     throw new Error("Empty response received");
@@ -327,22 +378,79 @@ export function parseJSON<T>(text: string): T {
   // Try to parse directly first
   try {
     return JSON.parse(text.trim()) as T;
-  } catch {
-    // If direct parse fails, try to extract JSON
+  } catch (e) {
+    // If direct parse fails, try to extract and fix JSON
   }
 
   // Remove markdown code blocks (```json ... ``` or ``` ... ```)
   let cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
 
-  // Try to find JSON object
+  // Remove any explanatory text before the first {
+  // Look for the first { that starts a JSON object
+  const firstBrace = cleaned.indexOf('{');
+  if (firstBrace > 0) {
+    // If there's text before the first brace, remove it
+    cleaned = cleaned.substring(firstBrace);
+  }
+
+  // Try to find JSON object (match from first { to matching })
+  let braceCount = 0;
+  let jsonEnd = -1;
+  for (let i = 0; i < cleaned.length; i++) {
+    if (cleaned[i] === '{') braceCount++;
+    if (cleaned[i] === '}') {
+      braceCount--;
+      if (braceCount === 0) {
+        jsonEnd = i + 1;
+        break;
+      }
+    }
+  }
+
+  if (jsonEnd > 0) {
+    const jsonStr = cleaned.substring(0, jsonEnd);
+    
+    // Try parsing the extracted JSON
+    try {
+      return JSON.parse(jsonStr) as T;
+    } catch (e) {
+      // If parsing fails, try fixing common JSON errors
+      try {
+        const fixed = fixJSONSyntax(jsonStr);
+        return JSON.parse(fixed) as T;
+      } catch (fixError) {
+        // Log more context for debugging
+        const errorPos = jsonStr.length > 7725 ? 7725 : Math.min(jsonStr.length - 100, 0);
+        const contextStart = Math.max(0, errorPos - 200);
+        const contextEnd = Math.min(jsonStr.length, errorPos + 200);
+        const context = jsonStr.substring(contextStart, contextEnd);
+        const lineNumber = jsonStr.substring(0, errorPos).split('\n').length;
+        
+        console.error("Failed to parse JSON after fixing:");
+        console.error(`Error at position ${errorPos}, line ${lineNumber}`);
+        console.error("Context around error:", context);
+        console.error("Full JSON length:", jsonStr.length);
+        console.error("First 500 chars:", jsonStr.substring(0, 500));
+        console.error("Last 500 chars:", jsonStr.substring(Math.max(0, jsonStr.length - 500)));
+        
+        throw new Error(`Invalid JSON format: ${e instanceof Error ? e.message : "Unknown error"}. Context: ${context.substring(0, 100)}...`);
+      }
+    }
+  }
+
+  // Fallback: Try simple regex match
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     try {
-  return JSON.parse(jsonMatch[0]) as T;
+      return JSON.parse(jsonMatch[0]) as T;
     } catch (e) {
-      // If parsing fails, log the problematic text
-      console.error("Failed to parse JSON:", jsonMatch[0].substring(0, 200));
-      throw new Error(`Invalid JSON format: ${e instanceof Error ? e.message : "Unknown error"}`);
+      try {
+        const fixed = fixJSONSyntax(jsonMatch[0]);
+        return JSON.parse(fixed) as T;
+      } catch (fixError) {
+        console.error("Failed to parse JSON:", jsonMatch[0].substring(0, 500));
+        throw new Error(`Invalid JSON format: ${e instanceof Error ? e.message : "Unknown error"}`);
+      }
     }
   }
 
@@ -352,8 +460,13 @@ export function parseJSON<T>(text: string): T {
     try {
       return JSON.parse(arrayMatch[0]) as T;
     } catch (e) {
-      console.error("Failed to parse JSON array:", arrayMatch[0].substring(0, 200));
-      throw new Error(`Invalid JSON format: ${e instanceof Error ? e.message : "Unknown error"}`);
+      try {
+        const fixed = fixJSONSyntax(arrayMatch[0]);
+        return JSON.parse(fixed) as T;
+      } catch (fixError) {
+        console.error("Failed to parse JSON array:", arrayMatch[0].substring(0, 500));
+        throw new Error(`Invalid JSON format: ${e instanceof Error ? e.message : "Unknown error"}`);
+      }
     }
   }
 

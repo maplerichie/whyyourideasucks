@@ -27,9 +27,9 @@ export type RoasterOutput = {
 };
 
 export type MentorOutput = {
-  pivots: string[]; // 2-3 improved versions
-  next7days: string[]; // Action plan
-  suggestions: string[]; // General suggestions
+  improvements: string[]; // Constructive suggestions/improvements based on roast critiques
+  precautions: string[]; // Things to watch out for when implementing improvements
+  implementationSteps: string[]; // Step-by-step implementation guidance from product manager perspective
 };
 
 export type SynthesisOutput = {
@@ -55,7 +55,8 @@ export type FinalRoastOutput = {
     founder_fit: { score: number; why_sucks: string; fix: string[] };
     hackathon: { score: number; why_sucks: string; fix: string[] };
   };
-  pivots: string[];
-  next7days: string[];
+  improvements: string[];
+  precautions: string[];
+  implementationSteps: string[];
 };
 

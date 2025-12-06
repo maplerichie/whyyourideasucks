@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BrutalityMeter } from "./BrutalityMeter";
 import { useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { getSettings, validateSettings } from "@/lib/settings";
+import { cn } from "@/lib/utils";
+import { Loader2, Sparkles, Zap, TrendingUp, Shield, DollarSign, Rocket } from "lucide-react";
 
 type FormData = {
   // Stage 1
@@ -52,32 +55,28 @@ export function IdeaForm() {
 
   // Default values from test script
   const defaultFormData: FormData = {
-    pitch: "whyyourideasucks.ai - A platform that uses AI to brutally evaluate startup ideas, providing honest feedback on market viability, distribution, monetization, and defensibility. Perfect for hackathon judges and founders who want quick, unfiltered feedback.",
-    category: "B2B/SaaS",
-    stage: "MVP built",
-    brutality: "savage",
-    targetUser: "Startup founders, hackathon judges, investors",
-    tam: 50000000,
-    problemUrgency: 8,
-    alternatives: "Manual idea evaluation, YC application process, expensive consultants",
-    evidence: "Founders waste time on bad ideas. Hackathon judges need quick evaluations.",
-    distribution: "Product Hunt launch, Twitter/X virality, YC community, hackathon partnerships",
-    distributionChannels: ["Product Hunt", "Twitter/X", "YC Community", "Hackathons"],
-    cacGuess: 15,
-    unfairEdge: "First-mover in brutal AI feedback space, terminal hacker aesthetic, YC-style grilling",
-    monetization: "Freemium model with premium detailed reports and API access",
-    monetizationModel: "Freemium",
-    price: 29,
-    teamFit: "Technical founder with AI/ML background, experience in startup evaluation",
-    tractionMetrics: "Early beta users, positive feedback from hackathon judges",
+    pitch: "LocalEats - A social marketplace connecting home cooks with neighbors who want authentic, home-cooked meals. Think Uber Eats but for homemade food from your local community. Users can browse nearby home chefs, order meals for pickup or delivery, and build a community around local food culture.",
+    category: "Marketplace",
+    stage: "Pre-idea",
+    brutality: "honest",
+    targetUser: "Busy professionals aged 25-45 in urban areas, food enthusiasts who want authentic home cooking but don't have time to cook themselves",
+    tam: 2000000000,
+    problemUrgency: 6,
+    alternatives: "Uber Eats, DoorDash, meal prep services, cooking at home, restaurant dining",
+    evidence: "People love home-cooked food but lack time. Social media shows demand for authentic experiences.",
+    distribution: "Start in 3 neighborhoods, word-of-mouth, local Facebook groups, Nextdoor app, foodie Instagram influencers",
+    distributionChannels: ["Viral/Social", "Partnerships", "Content"],
+    cacGuess: 25,
+    unfairEdge: "First-mover in hyperlocal home cooking space, community-driven model creates network effects, personal connection with chefs",
+    monetization: "Take 15% commission from each transaction, optional premium subscription for chefs ($9.99/month) for better visibility",
+    monetizationModel: "Other",
+    price: 0,
+    teamFit: "Former product manager at food delivery startup, passionate home cook, some experience with marketplace models",
+    tractionMetrics: "None yet - just an idea",
   };
 
-  // Initialize form data - use lazy initializer to ensure defaults are always applied
-  const [formData, setFormData] = useState<FormData>(() => {
-    // Always start with defaults
-    let initialData = { ...defaultFormData };
-
-    // Check for quick roast data from landing page (only on client)
+  // Check for quick roast data first (before removing from sessionStorage)
+  const getQuickRoastData = () => {
     if (typeof window !== "undefined") {
       const quickPitch = sessionStorage.getItem("quickPitch");
       const quickCategory = sessionStorage.getItem("quickCategory");
@@ -91,32 +90,138 @@ export function IdeaForm() {
         sessionStorage.removeItem("quickStage");
         sessionStorage.removeItem("quickBrutality");
 
-        // Override with quick roast data, but keep defaults for missing fields
-        initialData = {
-          ...defaultFormData,
+        return {
+          hasQuickRoast: true,
           pitch: quickPitch,
-          category: (quickCategory as FormData["category"]) || defaultFormData.category,
-          stage: (quickStage as FormData["stage"]) || defaultFormData.stage,
-          brutality: (quickBrutality as FormData["brutality"]) || defaultFormData.brutality,
+          category: quickCategory,
+          stage: quickStage,
+          brutality: quickBrutality,
         };
       }
+    }
+    return { hasQuickRoast: false };
+  };
+
+  // Check for pivot data (full form pre-fill)
+  const getPivotData = () => {
+    if (typeof window !== "undefined") {
+      const isPivot = sessionStorage.getItem("isPivot");
+      if (isPivot === "true") {
+        const pivotPitch = sessionStorage.getItem("pivotPitch");
+        const pivotCategory = sessionStorage.getItem("pivotCategory");
+        const pivotStage = sessionStorage.getItem("pivotStage");
+        const pivotBrutality = sessionStorage.getItem("pivotBrutality");
+        const pivotTargetUser = sessionStorage.getItem("pivotTargetUser");
+        const pivotTam = sessionStorage.getItem("pivotTam");
+        const pivotProblemUrgency = sessionStorage.getItem("pivotProblemUrgency");
+        const pivotAlternatives = sessionStorage.getItem("pivotAlternatives");
+        const pivotEvidence = sessionStorage.getItem("pivotEvidence");
+        const pivotDistribution = sessionStorage.getItem("pivotDistribution");
+        const pivotDistributionChannels = sessionStorage.getItem("pivotDistributionChannels");
+        const pivotCacGuess = sessionStorage.getItem("pivotCacGuess");
+        const pivotUnfairEdge = sessionStorage.getItem("pivotUnfairEdge");
+        const pivotMonetization = sessionStorage.getItem("pivotMonetization");
+        const pivotMonetizationModel = sessionStorage.getItem("pivotMonetizationModel");
+        const pivotPrice = sessionStorage.getItem("pivotPrice");
+        const pivotTeamFit = sessionStorage.getItem("pivotTeamFit");
+        const pivotTractionMetrics = sessionStorage.getItem("pivotTractionMetrics");
+
+        if (pivotPitch) {
+          // Clear all pivot data from sessionStorage after reading
+          sessionStorage.removeItem("isPivot");
+          sessionStorage.removeItem("pivotPitch");
+          sessionStorage.removeItem("pivotCategory");
+          sessionStorage.removeItem("pivotStage");
+          sessionStorage.removeItem("pivotBrutality");
+          sessionStorage.removeItem("pivotTargetUser");
+          sessionStorage.removeItem("pivotTam");
+          sessionStorage.removeItem("pivotProblemUrgency");
+          sessionStorage.removeItem("pivotAlternatives");
+          sessionStorage.removeItem("pivotEvidence");
+          sessionStorage.removeItem("pivotDistribution");
+          sessionStorage.removeItem("pivotDistributionChannels");
+          sessionStorage.removeItem("pivotCacGuess");
+          sessionStorage.removeItem("pivotUnfairEdge");
+          sessionStorage.removeItem("pivotMonetization");
+          sessionStorage.removeItem("pivotMonetizationModel");
+          sessionStorage.removeItem("pivotPrice");
+          sessionStorage.removeItem("pivotTeamFit");
+          sessionStorage.removeItem("pivotTractionMetrics");
+
+          return {
+            hasPivot: true,
+            pitch: pivotPitch,
+            category: pivotCategory,
+            stage: pivotStage,
+            brutality: pivotBrutality,
+            targetUser: pivotTargetUser,
+            tam: pivotTam ? Number(pivotTam) : undefined,
+            problemUrgency: pivotProblemUrgency ? Number(pivotProblemUrgency) : undefined,
+            alternatives: pivotAlternatives,
+            evidence: pivotEvidence,
+            distribution: pivotDistribution,
+            distributionChannels: pivotDistributionChannels ? JSON.parse(pivotDistributionChannels) : [],
+            cacGuess: pivotCacGuess ? Number(pivotCacGuess) : undefined,
+            unfairEdge: pivotUnfairEdge,
+            monetization: pivotMonetization,
+            monetizationModel: pivotMonetizationModel,
+            price: pivotPrice ? Number(pivotPrice) : undefined,
+            teamFit: pivotTeamFit,
+            tractionMetrics: pivotTractionMetrics,
+          };
+        }
+      }
+    }
+    return { hasPivot: false };
+  };
+
+  const quickRoastData = getQuickRoastData();
+  const pivotData = getPivotData();
+
+  // Initialize form data - use lazy initializer to ensure defaults are always applied
+  const [formData, setFormData] = useState<FormData>(() => {
+    // Always start with defaults
+    let initialData = { ...defaultFormData };
+
+    // Override with pivot data if available (full pre-fill)
+    if (pivotData.hasPivot) {
+      initialData = {
+        ...defaultFormData,
+        pitch: pivotData.pitch!,
+        category: (pivotData.category as FormData["category"]) || defaultFormData.category,
+        stage: (pivotData.stage as FormData["stage"]) || defaultFormData.stage,
+        brutality: (pivotData.brutality as FormData["brutality"]) || defaultFormData.brutality,
+        targetUser: pivotData.targetUser || defaultFormData.targetUser,
+        tam: pivotData.tam || defaultFormData.tam,
+        problemUrgency: pivotData.problemUrgency || defaultFormData.problemUrgency,
+        alternatives: pivotData.alternatives || defaultFormData.alternatives,
+        evidence: pivotData.evidence || undefined,
+        distribution: pivotData.distribution || defaultFormData.distribution,
+        distributionChannels: pivotData.distributionChannels || defaultFormData.distributionChannels,
+        cacGuess: pivotData.cacGuess,
+        unfairEdge: pivotData.unfairEdge || defaultFormData.unfairEdge,
+        monetization: pivotData.monetization || defaultFormData.monetization,
+        monetizationModel: (pivotData.monetizationModel as FormData["monetizationModel"]) || defaultFormData.monetizationModel,
+        price: pivotData.price,
+        teamFit: pivotData.teamFit || defaultFormData.teamFit,
+        tractionMetrics: pivotData.tractionMetrics || undefined,
+      };
+    } else if (quickRoastData.hasQuickRoast) {
+      // Override with quick roast data if available (partial pre-fill)
+      initialData = {
+        ...defaultFormData,
+        pitch: quickRoastData.pitch!,
+        category: (quickRoastData.category as FormData["category"]) || defaultFormData.category,
+        stage: (quickRoastData.stage as FormData["stage"]) || defaultFormData.stage,
+        brutality: (quickRoastData.brutality as FormData["brutality"]) || defaultFormData.brutality,
+      };
     }
 
     return initialData;
   });
 
-  // Check for quick roast data to determine initial stage
-  const getInitialStage = (): number => {
-    if (typeof window !== "undefined") {
-      const quickPitch = sessionStorage.getItem("quickPitch");
-      if (quickPitch) {
-        return 2; // Start at stage 2 if coming from quick roast
-      }
-    }
-    return 1; // Start at stage 1 for new form
-  };
-
-  const [stage, setStage] = useState(getInitialStage());
+  // Start at stage 2 if coming from quick roast, otherwise stage 1 (improvements start at stage 1 to allow review/edits)
+  const [stage, setStage] = useState(quickRoastData.hasQuickRoast ? 2 : 1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) => {
@@ -140,6 +245,17 @@ export function IdeaForm() {
 
     setIsSubmitting(true);
     try {
+      // Get and validate settings
+      const settings = getSettings();
+      const validation = validateSettings(settings);
+      if (!validation.valid) {
+        alert(
+          `Settings error: ${validation.errors.join(", ")}\n\nPlease configure your API keys in Settings.`
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
       // Submit idea
       const ideaId = await submitIdea({
         pitch: formData.pitch,
@@ -160,6 +276,7 @@ export function IdeaForm() {
         teamFit: formData.teamFit,
         tractionMetrics: formData.tractionMetrics || undefined,
         brutality: formData.brutality,
+        modelSettings: settings.agents,
       });
 
       // Generate roast
@@ -184,6 +301,7 @@ export function IdeaForm() {
           tractionMetrics: formData.tractionMetrics,
           brutality: formData.brutality,
         },
+        settings,
       });
 
       // Save roast
@@ -192,8 +310,9 @@ export function IdeaForm() {
         verdict: roastResult.verdict,
         brutality: formData.brutality,
         scores: roastResult.scores,
-        pivots: roastResult.pivots,
-        next7days: roastResult.next7days,
+        improvements: roastResult.improvements,
+        precautions: roastResult.precautions,
+        implementationSteps: roastResult.implementationSteps,
       });
 
       router.push(`/roast/${roastId}`);
@@ -205,343 +324,437 @@ export function IdeaForm() {
     }
   };
 
+  // Loading states for roast generation
+  const [loadingStage, setLoadingStage] = useState<string>("");
+  const loadingStages = [
+    { icon: TrendingUp, text: "Analyzing market viability...", delay: 0 },
+    { icon: Rocket, text: "Evaluating distribution channels...", delay: 2000 },
+    { icon: DollarSign, text: "Assessing monetization strategy...", delay: 4000 },
+    { icon: Shield, text: "Checking defensibility moats...", delay: 6000 },
+    { icon: Zap, text: "Generating actionable fixes...", delay: 8000 },
+  ];
+
+  // Update loading stage during roast generation
+  useEffect(() => {
+    if (isSubmitting && stage === 4) {
+      let currentIndex = 0;
+      const timeouts: NodeJS.Timeout[] = [];
+
+      const updateStage = () => {
+        if (currentIndex < loadingStages.length) {
+          setLoadingStage(loadingStages[currentIndex].text);
+          currentIndex++;
+          if (currentIndex < loadingStages.length) {
+            const delay = loadingStages[currentIndex].delay - (loadingStages[currentIndex - 1]?.delay || 0);
+            const timeout = setTimeout(updateStage, delay);
+            timeouts.push(timeout);
+          }
+        }
+      };
+      updateStage();
+
+      return () => {
+        timeouts.forEach(clearTimeout);
+      };
+    } else {
+      setLoadingStage("");
+    }
+  }, [isSubmitting, stage]);
+
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold mb-3 gradient-text">Get Your Idea Roasted</h1>
-          <p className="text-lg text-muted-foreground">
-            Answer a few questions to get a brutal-but-constructive evaluation
-          </p>
-        </div>
-
-        {/* Progress Indicator */}
-        <div className="mb-8">
-          <div className="flex gap-2 mb-2">
-            {[1, 2, 3, 4].map((s) => (
-              <div
-                key={s}
-                className={`flex-1 h-2 rounded-full transition-all duration-300 ${
-                  s <= stage 
-                    ? "bg-gradient-to-r from-primary to-secondary shadow-lg shadow-primary/20" 
-                    : "bg-muted"
-                }`}
-              />
-            ))}
+    <>
+      {/* Full-screen loading overlay for roast generation */}
+      {isSubmitting && stage === 4 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm animate-fadeIn">
+          <div className="text-center max-w-md mx-auto px-6">
+            <div className="relative mb-8">
+              <div className="w-24 h-24 mx-auto relative">
+                <Loader2 className="w-24 h-24 text-primary animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                </div>
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold mb-4 text-foreground animate-fadeInUp">Generating Your Roast</h2>
+            <p className="text-lg text-muted-foreground mb-8 font-medium">
+              {loadingStage || "Preparing analysis..."}
+            </p>
+            <div className="space-y-3">
+              {loadingStages.map((stageItem, idx) => {
+                const Icon = stageItem.icon;
+                const currentIndex = loadingStages.findIndex(s => s.text === loadingStage);
+                const isActive = currentIndex >= idx || (loadingStage === "" && idx === 0);
+                const isCurrent = loadingStage === stageItem.text;
+                return (
+                  <div
+                    key={stageItem.text}
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-500 ${isActive
+                      ? "bg-primary/10 border border-primary/20 shadow-sm"
+                      : "bg-secondary/50 opacity-50"
+                      }`}
+                  >
+                    <Icon className={`w-5 h-5 transition-colors ${isActive ? "text-primary" : "text-muted-foreground"} ${isCurrent ? "animate-pulse" : ""}`} />
+                    <span className={`text-sm font-medium flex-1 text-left ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                      {stageItem.text}
+                    </span>
+                    {isCurrent && (
+                      <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                    )}
+                    {isActive && !isCurrent && (
+                      <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-primary" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground mt-8 animate-pulse">
+              This usually takes 30-60 seconds...
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground text-center">
-            Step {stage} of 4
-          </p>
         </div>
+      )}
 
-      <Card className="glass-strong">
-        <CardHeader>
-          <CardTitle>
-            Stage {stage}:{" "}
-            {stage === 1
-              ? "Idea Basics"
-              : stage === 2
-                ? "Market & Users"
-                : stage === 3
-                  ? "Go-to-Market"
-                  : "Money & Fit"}
-          </CardTitle>
-          <CardDescription>
-            {stage === 1
-              ? "Tell us about your idea"
-              : stage === 2
-                ? "Who needs this and why?"
-                : stage === 3
-                  ? "How will you reach users?"
-                  : "How will you make money?"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Stage 1: Idea Basics */}
-          {stage === 1 && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="pitch">Idea Pitch</Label>
-                <Textarea
-                  id="pitch"
-                  placeholder="Describe your idea in 1-2 sentences. Who is it for? What problem does it solve?"
-                  value={formData.pitch}
-                  onChange={(e) => updateField("pitch", e.target.value)}
-                  rows={4}
-                  maxLength={500}
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          {/* Header */}
+          <div className="mb-10">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2 text-foreground">Get Your Idea Roasted</h1>
+            <p className="text-base text-muted-foreground">
+              Answer a few questions to get a brutal-but-constructive evaluation
+            </p>
+          </div>
+
+          {/* Progress Indicator */}
+          <div className="mb-8">
+            <div className="flex gap-2 mb-3">
+              {[1, 2, 3, 4].map((s) => (
+                <div
+                  key={s}
+                  className={`flex-1 h-2.5 rounded-full transition-all duration-500 ${s <= stage
+                    ? "bg-primary shadow-md"
+                    : "bg-secondary"
+                    }`}
                 />
-                <p className="text-xs text-muted-foreground">
-                  {formData.pitch.length}/500 characters
-                </p>
-              </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground text-center font-medium">
+              Step {stage} of 4
+            </p>
+          </div>
 
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <div className="flex flex-wrap gap-2">
-                  {["B2B/SaaS", "B2C app", "Marketplace", "Dev tool", "Consumer hardware", "Other"].map((cat) => (
-                    <Button
-                      key={cat}
-                      type="button"
-                      variant={formData.category === cat ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => updateField("category", cat as FormData["category"])}
-                      className={formData.category === cat ? "" : "hover:bg-muted"}
-                    >
-                      {cat}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Stage</Label>
-                <div className="flex flex-wrap gap-2">
-                  {["Pre-idea", "Hackathon demo", "MVP built", "Traction", "Raising"].map((s) => (
-                    <Button
-                      key={s}
-                      type="button"
-                      variant={formData.stage === s ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => updateField("stage", s as FormData["stage"])}
-                      className={formData.stage === s ? "" : "hover:bg-muted"}
-                    >
-                      {s}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <BrutalityMeter
-                value={formData.brutality}
-                onChange={(value) => updateField("brutality", value)}
-              />
-            </>
-          )}
-
-          {/* Stage 2: Market & Users */}
-          {stage === 2 && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="targetUser">Target User</Label>
-                <Textarea
-                  id="targetUser"
-                  placeholder="Define your ideal customer (age, job, pain level). How many potential users?"
-                  value={formData.targetUser}
-                  onChange={(e) => updateField("targetUser", e.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <Label>
-                  TAM (Total Addressable Market): ${formData.tam.toLocaleString()}
-                </Label>
-                <Slider
-                  value={[formData.tam]}
-                  onValueChange={([value]) => updateField("tam", value)}
-                  min={1000}
-                  max={1000000000}
-                  step={10000}
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>$1K</span>
-                  <span>$1B</span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Label>Problem Urgency: {formData.problemUrgency}/10</Label>
-                <Slider
-                  value={[formData.problemUrgency]}
-                  onValueChange={([value]) => updateField("problemUrgency", value)}
-                  min={1}
-                  max={10}
-                  step={1}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="alternatives">Current Alternatives</Label>
-                <Textarea
-                  id="alternatives"
-                  placeholder="Name 2-3 current alternatives they use (even bad ones)"
-                  value={formData.alternatives}
-                  onChange={(e) => updateField("alternatives", e.target.value)}
-                  rows={2}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="evidence">Evidence (Optional)</Label>
-                <Input
-                  id="evidence"
-                  placeholder="Link to landing page, GitHub, user chats, surveys, etc."
-                  value={formData.evidence || ""}
-                  onChange={(e) => updateField("evidence", e.target.value)}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Stage 3: Go-to-Market */}
-          {stage === 3 && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="distribution">Distribution Plan</Label>
-                <Textarea
-                  id="distribution"
-                  placeholder="How do first 100 users find you? Specific channels?"
-                  value={formData.distribution}
-                  onChange={(e) => updateField("distribution", e.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Distribution Channels</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {DISTRIBUTION_CHANNELS.map((channel) => (
-                    <div key={channel} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={channel}
-                        checked={formData.distributionChannels.includes(channel)}
-                        onCheckedChange={() => toggleChannel(channel)}
-                      />
-                      <Label htmlFor={channel} className="text-sm font-normal cursor-pointer">
-                        {channel}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cacGuess">CAC Guess (Optional)</Label>
-                <Input
-                  id="cacGuess"
-                  type="number"
-                  placeholder="Customer Acquisition Cost"
-                  value={formData.cacGuess || ""}
-                  onChange={(e) =>
-                    updateField("cacGuess", e.target.value ? Number(e.target.value) : undefined)
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="unfairEdge">Unfair Edge / Moat</Label>
-                <Textarea
-                  id="unfairEdge"
-                  placeholder="What's your moat? (Team expertise, data, network, patents?) Why can't incumbents copy day 1?"
-                  value={formData.unfairEdge}
-                  onChange={(e) => updateField("unfairEdge", e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Stage 4: Money & Fit */}
-          {stage === 4 && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="monetization">Monetization Strategy</Label>
-                <Textarea
-                  id="monetization"
-                  placeholder="How do you make money? Who pays?"
-                  value={formData.monetization}
-                  onChange={(e) => updateField("monetization", e.target.value)}
-                  rows={2}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Monetization Model</Label>
-                <div className="flex flex-wrap gap-2">
-                  {["Freemium", "Subscription", "Ads", "One-time", "Other"].map((model) => (
-                    <Button
-                      key={model}
-                      type="button"
-                      variant={formData.monetizationModel === model ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => updateField("monetizationModel", model as FormData["monetizationModel"])}
-                      className={formData.monetizationModel === model ? "" : "hover:bg-muted"}
-                    >
-                      {model}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="price">Price per User/Month (Optional)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  placeholder="e.g., 29"
-                  value={formData.price || ""}
-                  onChange={(e) =>
-                    updateField("price", e.target.value ? Number(e.target.value) : undefined)
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="teamFit">Team Fit</Label>
-                <Textarea
-                  id="teamFit"
-                  placeholder="Your key skills/experience matching this idea?"
-                  value={formData.teamFit}
-                  onChange={(e) => updateField("teamFit", e.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tractionMetrics">Traction Metrics (Optional)</Label>
-                <Input
-                  id="tractionMetrics"
-                  placeholder="Users, revenue, growth rate, etc."
-                  value={formData.tractionMetrics || ""}
-                  onChange={(e) => updateField("tractionMetrics", e.target.value)}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setStage(Math.max(1, stage - 1))}
-              disabled={stage === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
+          <Card className="shadow-elevated border-2 border-border bg-primary/15 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                Stage {stage}:{" "}
+                {stage === 1
+                  ? "Idea Basics"
+                  : stage === 2
+                    ? "Market & Users"
+                    : stage === 3
+                      ? "Go-to-Market"
+                      : "Money & Fit"}
+              </CardTitle>
+              <CardDescription className="text-sm">
+                {stage === 1
+                  ? "Tell us about your idea"
+                  : stage === 2
+                    ? "Who needs this and why?"
+                    : stage === 3
+                      ? "How will you reach users?"
+                      : "How will you make money?"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Stage 1: Idea Basics */}
+              {stage === 1 && (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {stage === 4 ? "Generating Roast..." : "Processing..."}
+                  <div className="space-y-2">
+                    <Label htmlFor="pitch">Idea Pitch</Label>
+                    <Textarea
+                      id="pitch"
+                      placeholder="Describe your idea in 1-2 sentences. Who is it for? What problem does it solve?"
+                      value={formData.pitch}
+                      onChange={(e) => updateField("pitch", e.target.value)}
+                      rows={4}
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.pitch.length}/500 characters
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Category</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {["B2B/SaaS", "B2C app", "Marketplace", "Dev tool", "Consumer hardware", "Other"].map((cat) => (
+                        <Button
+                          key={cat}
+                          type="button"
+                          variant={formData.category === cat ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => updateField("category", cat as FormData["category"])}
+                          className={formData.category === cat ? "shadow-md" : "hover:bg-primary/5 hover:border-primary/50"}
+                        >
+                          {cat}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Stage</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {["Pre-idea", "Hackathon demo", "MVP built", "Traction", "Raising"].map((s) => (
+                        <Button
+                          key={s}
+                          type="button"
+                          variant={formData.stage === s ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => updateField("stage", s as FormData["stage"])}
+                          className={formData.stage === s ? "shadow-md" : "hover:bg-primary/5 hover:border-primary/50"}
+                        >
+                          {s}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <BrutalityMeter
+                    value={formData.brutality}
+                    onChange={(value) => updateField("brutality", value)}
+                  />
                 </>
-              ) : (
-                stage === 4 ? "Get Roasted" : "Next"
               )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+
+              {/* Stage 2: Market & Users */}
+              {stage === 2 && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="targetUser">Target User</Label>
+                    <Textarea
+                      id="targetUser"
+                      placeholder="Define your ideal customer (age, job, pain level). How many potential users?"
+                      value={formData.targetUser}
+                      onChange={(e) => updateField("targetUser", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label>
+                      TAM (Total Addressable Market): ${formData.tam.toLocaleString()}
+                    </Label>
+                    <Slider
+                      value={[formData.tam]}
+                      onValueChange={([value]) => updateField("tam", value)}
+                      min={1000}
+                      max={1000000000}
+                      step={10000}
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>$1K</span>
+                      <span>$1B</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label>Problem Urgency: {formData.problemUrgency}/10</Label>
+                    <Slider
+                      value={[formData.problemUrgency]}
+                      onValueChange={([value]) => updateField("problemUrgency", value)}
+                      min={1}
+                      max={10}
+                      step={1}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="alternatives">Current Alternatives</Label>
+                    <Textarea
+                      id="alternatives"
+                      placeholder="Name 2-3 current alternatives they use (even bad ones)"
+                      value={formData.alternatives}
+                      onChange={(e) => updateField("alternatives", e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="evidence">Evidence (Optional)</Label>
+                    <Input
+                      id="evidence"
+                      placeholder="Link to landing page, GitHub, user chats, surveys, etc."
+                      value={formData.evidence || ""}
+                      onChange={(e) => updateField("evidence", e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Stage 3: Go-to-Market */}
+              {stage === 3 && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="distribution">Distribution Plan</Label>
+                    <Textarea
+                      id="distribution"
+                      placeholder="How do first 100 users find you? Specific channels?"
+                      value={formData.distribution}
+                      onChange={(e) => updateField("distribution", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Distribution Channels</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {DISTRIBUTION_CHANNELS.map((channel) => (
+                        <div key={channel} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={channel}
+                            checked={formData.distributionChannels.includes(channel)}
+                            onCheckedChange={() => toggleChannel(channel)}
+                          />
+                          <Label htmlFor={channel} className="text-sm font-normal cursor-pointer">
+                            {channel}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cacGuess">CAC Guess (Optional)</Label>
+                    <Input
+                      id="cacGuess"
+                      type="number"
+                      placeholder="Customer Acquisition Cost"
+                      value={formData.cacGuess || ""}
+                      onChange={(e) =>
+                        updateField("cacGuess", e.target.value ? Number(e.target.value) : undefined)
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="unfairEdge">Unfair Edge / Moat</Label>
+                    <Textarea
+                      id="unfairEdge"
+                      placeholder="What's your moat? (Team expertise, data, network, patents?) Why can't incumbents copy day 1?"
+                      value={formData.unfairEdge}
+                      onChange={(e) => updateField("unfairEdge", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Stage 4: Money & Fit */}
+              {stage === 4 && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="monetization">Monetization Strategy</Label>
+                    <Textarea
+                      id="monetization"
+                      placeholder="How do you make money? Who pays?"
+                      value={formData.monetization}
+                      onChange={(e) => updateField("monetization", e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Monetization Model</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {["Freemium", "Subscription", "Ads", "One-time", "Other"].map((model) => (
+                        <Button
+                          key={model}
+                          type="button"
+                          variant={formData.monetizationModel === model ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => updateField("monetizationModel", model as FormData["monetizationModel"])}
+                          className={formData.monetizationModel === model ? "shadow-md" : "hover:bg-primary/5 hover:border-primary/50"}
+                        >
+                          {model}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price per User/Month (Optional)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      placeholder="e.g., 29"
+                      value={formData.price || ""}
+                      onChange={(e) =>
+                        updateField("price", e.target.value ? Number(e.target.value) : undefined)
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="teamFit">Team Fit</Label>
+                    <Textarea
+                      id="teamFit"
+                      placeholder="Your key skills/experience matching this idea?"
+                      value={formData.teamFit}
+                      onChange={(e) => updateField("teamFit", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tractionMetrics">Traction Metrics (Optional)</Label>
+                    <Input
+                      id="tractionMetrics"
+                      placeholder="Users, revenue, growth rate, etc."
+                      value={formData.tractionMetrics || ""}
+                      onChange={(e) => updateField("tractionMetrics", e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStage(Math.max(1, stage - 1))}
+                  disabled={stage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className={cn(
+                    "relative overflow-hidden font-semibold",
+                    stage === 4 && "bg-primary hover:bg-primary-hover shadow-lg hover:shadow-xl"
+                  )}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      {stage === 4 ? "Generating Roast..." : "Processing..."}
+                    </>
+                  ) : (
+                    <>
+                      {stage === 4 && <Sparkles className="mr-2 h-4 w-4" />}
+                      {stage === 4 ? "Get Roasted" : "Next"}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
-

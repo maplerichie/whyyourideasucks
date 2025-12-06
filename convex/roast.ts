@@ -25,11 +25,75 @@ export const generateRoast = action({
       tractionMetrics: v.optional(v.string()),
       brutality: v.union(v.literal("gentle"), v.literal("honest"), v.literal("savage")),
     }),
+    settings: v.object({
+      openaiApiKey: v.optional(v.string()),
+      anthropicApiKey: v.optional(v.string()),
+      agents: v.object({
+        marketCynic: v.object({
+          provider: v.union(v.literal("openai"), v.literal("anthropic")),
+          model: v.string(),
+        }),
+        distributionHater: v.object({
+          provider: v.union(v.literal("openai"), v.literal("anthropic")),
+          model: v.string(),
+        }),
+        monetizationSkeptic: v.object({
+          provider: v.union(v.literal("openai"), v.literal("anthropic")),
+          model: v.string(),
+        }),
+        defensibilityCop: v.object({
+          provider: v.union(v.literal("openai"), v.literal("anthropic")),
+          model: v.string(),
+        }),
+        founderFit: v.object({
+          provider: v.union(v.literal("openai"), v.literal("anthropic")),
+          model: v.string(),
+        }),
+        hackathonRealityCheck: v.object({
+          provider: v.union(v.literal("openai"), v.literal("anthropic")),
+          model: v.string(),
+        }),
+        mentor: v.object({
+          provider: v.union(v.literal("openai"), v.literal("anthropic")),
+          model: v.string(),
+        }),
+        fixGenerator: v.object({
+          provider: v.union(v.literal("openai"), v.literal("anthropic")),
+          model: v.string(),
+        }),
+      }),
+    }),
   },
   handler: async (ctx, args) => {
     const ideaData = args.ideaData as IdeaData;
+    const settings = args.settings;
 
-    // Phase 1: Run 5 roaster agents in parallel
+    // Helper to get API key for a provider
+    const getApiKey = (provider: "openai" | "anthropic"): string => {
+      if (provider === "openai") {
+        if (!settings.openaiApiKey) {
+          throw new Error("OpenAI API key is required but not provided");
+        }
+        return settings.openaiApiKey;
+      } else {
+        if (!settings.anthropicApiKey) {
+          throw new Error("Anthropic API key is required but not provided");
+        }
+        return settings.anthropicApiKey;
+      }
+    };
+
+    // Helper to create agent config
+    const getAgentConfig = (agentKey: keyof typeof settings.agents) => {
+      const agent = settings.agents[agentKey];
+      return {
+        provider: agent.provider,
+        model: agent.model,
+        apiKey: getApiKey(agent.provider),
+      };
+    };
+
+    // Phase 1: Run 6 roaster agents in parallel
     const [
       marketResult,
       distributionResult,
@@ -38,16 +102,45 @@ export const generateRoast = action({
       hackathonResult,
       founderFitResult,
     ] = await Promise.all([
-      ctx.runAction(api.agents.marketCynic.evaluateMarket, { ideaData }),
-      ctx.runAction(api.agents.distributionHater.evaluateDistribution, { ideaData }),
-      ctx.runAction(api.agents.monetizationSkeptic.evaluateMonetization, { ideaData }),
-      ctx.runAction(api.agents.defensibilityCop.evaluateDefensibility, { ideaData }),
-      ctx.runAction(api.agents.hackathonRealityCheck.evaluateHackathon, { ideaData }),
-      ctx.runAction(api.agents.founderFit.evaluateFounderFit, { ideaData }),
+      ctx.runAction(api.agents.marketCynic.evaluateMarket, {
+        ideaData,
+        agentConfig: getAgentConfig("marketCynic"),
+      }),
+      ctx.runAction(api.agents.distributionHater.evaluateDistribution, {
+        ideaData,
+        agentConfig: getAgentConfig("distributionHater"),
+      }),
+      ctx.runAction(api.agents.monetizationSkeptic.evaluateMonetization, {
+        ideaData,
+        agentConfig: getAgentConfig("monetizationSkeptic"),
+      }),
+      ctx.runAction(api.agents.defensibilityCop.evaluateDefensibility, {
+        ideaData,
+        agentConfig: getAgentConfig("defensibilityCop"),
+      }),
+      ctx.runAction(api.agents.hackathonRealityCheck.evaluateHackathon, {
+        ideaData,
+        agentConfig: getAgentConfig("hackathonRealityCheck"),
+      }),
+      ctx.runAction(api.agents.founderFit.evaluateFounderFit, {
+        ideaData,
+        agentConfig: getAgentConfig("founderFit"),
+      }),
     ]);
 
-    // Phase 2: Run mentor agent
-    const mentorResult = await ctx.runAction(api.agents.mentor.generateMentorSuggestions, { ideaData });
+    // Phase 2: Run mentor agent with roaster critiques
+    const mentorResult = await ctx.runAction(api.agents.mentor.generateMentorSuggestions, {
+      ideaData,
+      roasterOutputs: {
+        market: marketResult,
+        distribution: distributionResult,
+        monetization: monetizationResult,
+        defensibility: defensibilityResult,
+        founder_fit: founderFitResult,
+        hackathon: hackathonResult,
+      },
+      agentConfig: getAgentConfig("mentor"),
+    });
 
     // Phase 3: Run synthesis agent
     const synthesisResult = await ctx.runAction(api.agents.fixGenerator.generateFixes, {
@@ -61,6 +154,7 @@ export const generateRoast = action({
         hackathon: hackathonResult,
       },
       mentorOutput: mentorResult,
+      agentConfig: getAgentConfig("fixGenerator"),
     });
 
     // Combine all results into final output schema
@@ -99,8 +193,9 @@ export const generateRoast = action({
           fix: synthesisResult.fixes.hackathon,
         },
       },
-      pivots: mentorResult.pivots.slice(0, 3),
-      next7days: mentorResult.next7days.slice(0, 7),
+      improvements: mentorResult.improvements,
+      precautions: mentorResult.precautions,
+      implementationSteps: mentorResult.implementationSteps,
     };
 
     return finalOutput;

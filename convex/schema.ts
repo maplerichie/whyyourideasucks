@@ -50,6 +50,40 @@ export default defineSchema({
     // Metadata
     brutality: v.union(v.literal("gentle"), v.literal("honest"), v.literal("savage")),
     userId: v.optional(v.id("users")), // Convex Auth user ID
+    modelSettings: v.optional(v.object({
+      marketCynic: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      distributionHater: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      monetizationSkeptic: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      defensibilityCop: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      founderFit: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      hackathonRealityCheck: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      mentor: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+      fixGenerator: v.object({
+        provider: v.union(v.literal("openai"), v.literal("anthropic")),
+        model: v.string(),
+      }),
+    })),
     createdAt: v.number(),
   }),
 
@@ -89,8 +123,9 @@ export default defineSchema({
         fix: v.array(v.string()),
       }),
     }),
-    pivots: v.array(v.string()),
-    next7days: v.array(v.string()),
+    improvements: v.array(v.string()),
+    precautions: v.array(v.string()),
+    implementationSteps: v.array(v.string()),
     createdAt: v.number(),
   })
     .index("by_date", ["createdAt"]),
