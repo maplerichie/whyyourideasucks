@@ -4,65 +4,6 @@
 
 *Terminal hacker aesthetic meets AI-powered idea evaluation.*
 
-## Inspiration
-
-Most startup ideas die in silence—founders get polite feedback that doesn't reveal fatal flaws until it's too late. We wanted to build something that gives YC-style brutal honesty at scale, combining the grilling intensity of investor due diligence with the speed of AI. The terminal hacker aesthetic emerged naturally: if we're going to "roast" ideas, why not make it feel like a command-line tool that ruthlessly evaluates your startup pitch? Perfect for hackathons where founders need fast, actionable feedback, and for investors who want to quickly screen deals.
-
-## What it does
-
-WhyYourIdeaSucks.ai is an AI-powered startup idea crash test that delivers brutal, structured feedback in 60 seconds. Users submit their idea (via quick form or detailed multi-step questionnaire), and the system orchestrates 8 specialized AI agents to evaluate 6 core dimensions: Market, Distribution, Monetization, Defensibility, Founder Fit, and Hackathon Feasibility. Each agent uses native tool calling to fetch real competitor data, pricing benchmarks, and market insights. The output is a comprehensive roast report with scores, "why it sucks" critiques, actionable fixes, suggested pivots, risk warnings, and concrete validation steps—all tuned to your chosen brutality level (Gentle/Honest/Savage).
-
-## How we built it
-
-**Architecture**: Built on Next.js 16 (App Router) with Convex as the backend for real-time data and serverless functions. The frontend uses TypeScript, Tailwind CSS, and shadcn/ui components styled with a terminal hacker theme (Geist Mono font, green-on-black palette).
-
-**AI System**: The core innovation is a multi-agent orchestration system. We built 6 specialized "roaster" agents (Market Cynic, Distribution Hater, Monetization Skeptic, Defensibility Cop, Founder Fit Analyst, Hackathon Reality Check), plus a Mentor agent and a Fix Generator synthesis agent. Each agent uses native LLM tool calling—OpenAI Agents SDK for GPT models and Anthropic SDK for Claude—to fetch real-world data via web search, competitor lookup, and pricing benchmark tools.
-
-**Key Technical Decisions**:
-- **Client-side API key management**: API keys stored in localStorage, allowing users to bring their own keys without server-side storage
-- **Per-agent model configuration**: Each agent can independently use OpenAI or Anthropic with different models (default: Haiku for roasters, Sonnet for synthesis)
-- **Parallel agent execution**: All roaster agents run concurrently for speed
-- **Terminal UI theme**: Custom CSS with monospace typography and terminal-style borders to match the "brutal honesty" brand
-
-## Challenges we ran into
-
-1. **Multi-agent orchestration**: Coordinating 8 agents with different prompts, tool requirements, and output formats while maintaining consistent structure. We solved this with a shared base agent class and type-safe output schemas.
-
-2. **Native tool calling**: Implementing tool calling with both OpenAI and Anthropic SDKs required different approaches—OpenAI uses Agents SDK with built-in tool execution, while Anthropic requires manual tool result handling. We abstracted this into a unified interface.
-
-3. **Balancing brutality with actionability**: Making feedback brutally honest without being demotivating. The brutality meter (Gentle/Honest/Savage) tunes tone while preserving substance, and the Mentor agent provides constructive pivots alongside critiques.
-
-4. **Client-side API key security**: Storing API keys in localStorage is convenient but requires careful UX to prevent accidental exposure. We built a settings page with clear warnings and validation.
-
-5. **Performance optimization**: Running 8 agents sequentially would take too long. We parallelized roaster agents and optimized prompt lengths to keep total evaluation time under 60 seconds.
-
-## Accomplishments that we're proud of
-
-- **Working multi-agent system**: Successfully orchestrated 8 specialized AI agents with native tool calling, producing coherent, structured evaluations
-- **Real-world data integration**: Agents fetch actual competitor data, pricing benchmarks, and market insights to ground critiques in reality
-- **Unique brand identity**: Terminal hacker aesthetic perfectly matches the "brutal honesty" positioning—users immediately understand what they're getting
-- **Fast evaluation**: Complete roast reports in ~60 seconds, making it practical for hackathon demos and quick idea validation
-- **Flexible configuration**: Per-agent model/provider selection allows users to optimize for cost, speed, or quality
-- **"Roast my Pivot" feature**: Instant re-evaluation of improved ideas creates a feedback loop that helps founders iterate quickly
-
-## What we learned
-
-- **Multi-agent design patterns**: How to structure specialized agents with shared base logic, type-safe outputs, and parallel execution
-- **Native tool calling**: Deep dive into OpenAI Agents SDK and Anthropic SDK differences—OpenAI's agentic approach vs Anthropic's explicit tool handling
-- **Prompt engineering at scale**: Managing 8 different agent prompts while maintaining consistency and avoiding prompt injection
-- **Client-side API key patterns**: Building secure, user-friendly API key management without server-side storage
-- **Terminal UI design**: Creating a cohesive terminal aesthetic with CSS (monospace fonts, green-on-black, terminal borders) that feels authentic without being gimmicky
-- **Convex serverless architecture**: Leveraging Convex actions for long-running AI operations and real-time data updates
-
-## What's next for WhyYourIdeaSucks
-
-- **Search similar failed ideas**: Database of past roasts to help users find similar ideas that failed or lost in previous hackathons
-- **Enhanced tool use**: Expand web search capabilities, add more pricing benchmarks, and integrate market research APIs
-- **Synthesis agent refinement**: Self-review and refinement loop to improve output quality without adding more agents
-- **Investor dashboard**: Batch evaluation mode for VCs to quickly screen multiple deals with structured risk analysis
-- **Community features**: Public idea directory with voting, comments, and "most roasted" leaderboards
-- **Export enhancements**: PDF export with customizable branding, shareable roast links with analytics
-- **API access**: Public API for developers to integrate roast evaluations into their own tools
 
 ## 🚀 Features
 
@@ -127,7 +68,7 @@ Each agent uses native LLM tool calling (OpenAI Agents SDK for GPT, Anthropic SD
 
 ## 🎯 Live Demo
 
-[whyyourideasuck.ai](https://whyyourideasuck.ai) – Try "AI poker coach for casual players"
+[whyyourideasuck.ai](https://whyyourideasucks.vercel.app/) – Try "AI poker coach for casual players"
 
 ## 📋 Example Output (What Users See)
 
